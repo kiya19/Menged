@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: menged-backend
+    env: node
+    plan: free
+    region: frankfurt
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false          # paste your Supabase connection string in the Render dashboard
+      - key: JWT_SECRET
+        generateValue: true  # Render generates a random one — no need to set it yourself
+      - key: JWT_EXPIRES_IN
+        value: 12h
+      - key: CORS_ORIGIN
+        sync: false          # comma-separated list of frontend origins allowed to call this API
