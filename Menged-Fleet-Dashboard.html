@@ -512,7 +512,6 @@
         link.download = 'Menged-Fleet-Dashboard.html';
         link.click();
         setTimeout(function () { URL.revokeObjectURL(link.href); }, 1000);
-        showToast('Menged-Fleet-Dashboard.html source code downloaded.');
       }
 
       function renderStats() {
@@ -1271,6 +1270,7 @@
           cashier: document.getElementById('materialCashier').value,
           material: document.getElementById('materialType').value,
           quantity: document.getElementById('materialQuantity').value,
+          serial: document.getElementById('materialQuantity').value,
           date: document.getElementById('materialDate').value,
           notes: document.getElementById('materialNotes').value.trim()
         })
