@@ -246,11 +246,7 @@
         <section class="view active" id="dashboard" data-view-panel="dashboard">
         <section class="heading-row">
           <div><h1>Good morning, Eyob <span style="font-size:23px">✦</span></h1><p class="subhead">Here is what is happening across your fleet today.</p></div>
-          <div class="header-actions">
-            <button class="btn" id="saveData"><span class="btn-icon">✓</span> Save data</button>
-            <button class="btn" id="exportData"><span class="btn-icon">⇩</span> Export data</button>
-            <button class="btn btn-primary" id="newAssignment"><span class="btn-icon">＋</span> New assignment</button>
-          </div>
+          
         </section>
         <section class="stats">
           <article class="stat"><div class="stat-top"><span>Total fleet</span><span class="stat-mark">▰</span></div><div class="stat-value" id="fleetCount">7</div><div class="stat-detail"><span class="up">+2</span> vehicles this month</div></article>
@@ -264,7 +260,7 @@
         </section>
         </section>
         <section class="panel fleet-panel view" id="fleet" data-view-panel="fleet">
-          <div class="panel-head"><div><div class="panel-title">Fleet assignment board</div><div class="panel-note">Manage vehicle, driver, cashier, and POS relationships in one place.</div></div><button class="link-button" id="resetData">Reset demo data</button></div>
+          <div class="panel-head"><div><div class="panel-title">Fleet assignment board</div><div class="panel-note">Manage vehicle, driver, cashier, and POS relationships in one place.</div></div><button class="link-button" id="resetData">Reload from server</button></div>
           <div class="fleet-toolbar"><div class="tabs"><button class="tab active" data-status="all">All vehicles</button><button class="tab" data-status="Active">Active</button><button class="tab" data-status="Idle">Idle</button><button class="tab" data-status="Unassigned">Unassigned</button></div><input class="search" id="fleetSearch" placeholder="Search plate, driver, cashier, POS, or side no."></div>
           <div class="table-wrap"><table><thead><tr><th>Vehicle</th><th>Driver</th><th>Cashier</th><th>POS device</th><th>Status</th><th></th></tr></thead><tbody id="fleetRows"><tr><td><div class="bus-cell"><div class="vehicle-icon">▰</div><div><span class="bus-name">ET-3-84216</span><span class="bus-sub">M-024 · Minibus</span></div></div></td><td><div class="person"><span class="mini-avatar">ST</span><span>Samuel T.</span></div></td><td><span style="color:#a0aaa7">Not assigned</span></td><td><span class="pos">POS-018</span></td><td><span class="status unassigned-status">Unassigned</span></td><td><button class="action" data-edit="b1">Manage</button></td></tr><tr><td><div class="bus-cell"><div class="vehicle-icon">▰</div><div><span class="bus-name">ET-3-81604</span><span class="bus-sub">M-011 · Minibus</span></div></div></td><td><div class="person"><span class="mini-avatar">MG</span><span>Mulu G.</span></div></td><td><div class="person"><span class="mini-avatar">RM</span><span>Rahel M.</span></div></td><td><span class="pos">POS-012</span></td><td><span class="status active-status">Active</span></td><td><button class="action" data-edit="b2">Manage</button></td></tr><tr><td><div class="bus-cell"><div class="vehicle-icon">▰</div><div><span class="bus-name">ET-3-85472</span><span class="bus-sub">M-031 · City bus</span></div></div></td><td><div class="person"><span class="mini-avatar">KA</span><span>Kebede A.</span></div></td><td><div class="person"><span class="mini-avatar">TD</span><span>Tigist D.</span></div></td><td><span class="pos">POS-023</span></td><td><span class="status active-status">Active</span></td><td><button class="action" data-edit="b3">Manage</button></td></tr><tr><td><div class="bus-cell"><div class="vehicle-icon">▰</div><div><span class="bus-name">ET-3-83190</span><span class="bus-sub">M-019 · Minibus</span></div></div></td><td><div class="person"><span class="mini-avatar">HB</span><span>Henok B.</span></div></td><td><div class="person"><span class="mini-avatar">LK</span><span>Liya K.</span></div></td><td><span class="pos">POS-009</span></td><td><span class="status idle-status">Idle</span></td><td><button class="action" data-edit="b4">Manage</button></td></tr><tr><td><div class="bus-cell"><div class="vehicle-icon">▰</div><div><span class="bus-name">ET-3-87581</span><span class="bus-sub">M-044 · City bus</span></div></div></td><td><div class="person"><span class="mini-avatar">MN</span><span>Mesfin N.</span></div></td><td><div class="person"><span class="mini-avatar">SW</span><span>Sara W.</span></div></td><td><span class="pos">POS-031</span></td><td><span class="status active-status">Active</span></td><td><button class="action" data-edit="b5">Manage</button></td></tr><tr><td><div class="bus-cell"><div class="vehicle-icon">▰</div><div><span class="bus-name">ET-3-80211</span><span class="bus-sub">M-008 · Minibus</span></div></div></td><td><span style="color:#a0aaa7">Not assigned</span></td><td><div class="person"><span class="mini-avatar">MF</span><span>Marta F.</span></div></td><td><span class="pos">POS-004</span></td><td><span class="status unassigned-status">Unassigned</span></td><td><button class="action" data-edit="b6">Manage</button></td></tr><tr><td><div class="bus-cell"><div class="vehicle-icon">▰</div><div><span class="bus-name">ET-3-86733</span><span class="bus-sub">M-037 · Minibus</span></div></div></td><td><div class="person"><span class="mini-avatar">YA</span><span>Yonas A.</span></div></td><td><div class="person"><span class="mini-avatar">HE</span><span>Hana E.</span></div></td><td><span class="pos">POS-027</span></td><td><span class="status active-status">Active</span></td><td><button class="action" data-edit="b7">Manage</button></td></tr></tbody></table></div>
         </section>
@@ -402,36 +398,24 @@
   <script>
     (function () {
       var seed = [
-        {id:'b1',plate:'ET-03-B89851',side:'M-024',type:'Minibus',route:'Piassa — Megenagna',driver:'ETAGENNEHU LEMMA.',cashier:'SEMHAL HAGOS',pos:'POS-000070',status:'Unassigned'},
-        {id:'b2',plate:'ET-03-B88960',side:'M-011',type:'Minibus',route:'Mexico — Sar Bet',driver:'KIBENESH BEDETA.',cashier:'BETELEHEM NIGATU',pos:'POS-000374',status:'Active'},
-        {id:'b3',plate:'ET-03-B89821',side:'M-031',type:'City bus',route:'4 Kilo — Tor Hailoch',driver:'BERHANE GEBREEGIZABER.',cashier:'ADDISYE MERAGIYAW',pos:'POS-000136',status:'Active'},
-        {id:'b4',plate:'ET-03-B89838',side:'M-019',type:'Minibus',route:'Bole — Piazza',driver:'YETEMWORK BEKELE',cashier:'MEKDES DESALEGN',pos:'POS-000212',status:'Idle'},
-        {id:'b5',plate:'ET-03-B89844',side:'M-044',type:'City bus',route:'Ayer Tena — Mexico',driver:'TAREKEGN G/EYESUS',cashier:'THENAT TEWODROS',pos:'POS-000123',status:'Active'},
-        {id:'b6',plate:'ET-03-B89853',side:'M-008',type:'Minibus',route:'Kality — Merkato',driver:'TSINAT EWNETU',cashier:'NEGIST SEMU.',pos:'POS-000156',status:'Unassigned'},
-        {id:'b7',plate:'ET-03-B89865',side:'M-037',type:'Minibus',route:'Lebu — Bole',driver:'WORKU YISMAW',cashier:'SOSINA WOSEN',pos:'POS-000038',status:'Active'}
+        {id:'b1',plate:'ET-3-84216',side:'M-024',type:'Minibus',route:'Piassa — Megenagna',driver:'Samuel T.',cashier:'',pos:'POS-018',status:'Unassigned'},
+        {id:'b2',plate:'ET-3-81604',side:'M-011',type:'Minibus',route:'Mexico — Sar Bet',driver:'Mulu G.',cashier:'Rahel M.',pos:'POS-012',status:'Active'},
+        {id:'b3',plate:'ET-3-85472',side:'M-031',type:'City bus',route:'4 Kilo — Tor Hailoch',driver:'Kebede A.',cashier:'Tigist D.',pos:'POS-023',status:'Active'},
+        {id:'b4',plate:'ET-3-83190',side:'M-019',type:'Minibus',route:'Bole — Piazza',driver:'Henok B.',cashier:'Liya K.',pos:'POS-009',status:'Idle'},
+        {id:'b5',plate:'ET-3-87581',side:'M-044',type:'City bus',route:'Ayer Tena — Mexico',driver:'Mesfin N.',cashier:'Sara W.',pos:'POS-031',status:'Active'},
+        {id:'b6',plate:'ET-3-80211',side:'M-008',type:'Minibus',route:'Kality — Merkato',driver:'',cashier:'Marta F.',pos:'POS-004',status:'Unassigned'},
+        {id:'b7',plate:'ET-3-86733',side:'M-037',type:'Minibus',route:'Lebu — Bole',driver:'Yonas A.',cashier:'Hana E.',pos:'POS-027',status:'Active'}
       ];
-      var defaultDrivers = ['ETAGENNEHU LEMMA','KIBENESH BEDETA','BERHANE GEBREEGIZABER.','YETEMWORK BEKELE','TAREKEGN G/EYESUS','TSINAT EWNETU','WORKU YISMAW'];
-      var defaultCashiers = ['SEMHAL HAGOS','BETELEHEM NIGATU','ADDISYE MERAGIYAW','MEKDES DESALEGN','THENAT TEWODROS','NEGIST SEMU','SOSINA WOSEN'];
-      var defaultPos = ['POS-000070','POS-000374','POS-000136','POS-000212','POS-000123','POS-000156','POS-000038'];
-      var fleet = loadData();
-      var defaultAuditors = [{id:'fa-001',name:'Mekdes T.',employeeId:'FA-001',phone:'+251 91 204 8801',status:'Active'}];
-      var auditors = loadAuditors();
-      
-      var defaultFinanceAudit = {
-        headers: ['S/No','Name','Status','March 31','April 1-30','May 1-31','June 1-30','July 1-22','Total','On hand'],
-        rows: [
-          [1, 'LENSA BOGALE', 'Activate', 17, 421, 458, 565, 432, 1893, 195],
-          ['', '', 'Corrupt', 1, 7, 8, 9, 12, 37, ''],
-          [2, 'Tsega Befikadu', 'Activate', 17, 546, 428, 634, 437, 2062, 143],
-          ['', '', 'Corrupt', 1, 9, 4, 13, 6, 33, ''],
-          [3, 'Melat Tewodros', 'Activate', 3, 601, 478, 850, 538, 2470, 133],
-          ['', '', 'Corrupt', '', 8, 9, 9, 6, 32, '']
-        ]
-      };
-      
-      var financeAudit = loadFinanceAudit();
-      var defaultMaterialIssues = [{id:'material-001',cashier:'Rahel M.',material:'Charger',quantity:1,date:'2026-08-03',notes:'POS charging unit'},{id:'material-002',cashier:'Tigist D.',material:'Cable',quantity:1,date:'2026-08-04',notes:'Replacement USB cable'}];
-      var materialIssues = loadMaterialIssues();
+      var defaultDrivers = ['Samuel T.','Mulu G.','Kebede A.','Henok B.','Mesfin N.','Yonas A.','Alemayehu S.'];
+      var defaultCashiers = ['Rahel M.','Tigist D.','Liya K.','Sara W.','Marta F.','Hana E.','Betelhem A.'];
+      var defaultPos = ['POS-004','POS-009','POS-012','POS-018','POS-023','POS-027','POS-031'];
+      // Real data now — loaded from the API by reloadAllData() at startup.
+      // These start empty and get filled in before the first render.
+      var fleet = [];
+      var auditors = [];
+      var FALLBACK_FINANCE_HEADERS = ['S/No','Name','Status','Total','On hand'];
+      var financeAudit = { headers: FALLBACK_FINANCE_HEADERS.slice(), rows: [], recordIds: [] };
+      var materialIssues = [];
       var activeFilter = 'all';
       var selectedBusId = '';
       var editingFinanceRowIndex = -1;
@@ -446,15 +430,50 @@
       ];
 
       function clone(value) { return JSON.parse(JSON.stringify(value)); }
-      function loadData() { try { var stored = localStorage.getItem('mengedFleetDemo'); return stored ? JSON.parse(stored) : clone(seed); } catch (e) { return clone(seed); } }
-      function loadAuditors() { try { var stored = localStorage.getItem('mengedFinanceAuditors'); return stored ? JSON.parse(stored) : clone(defaultAuditors); } catch (e) { return clone(defaultAuditors); } }
-      function loadFinanceAudit() { try { var stored = localStorage.getItem('mengedFinanceAudit'); return stored ? JSON.parse(stored) : clone(defaultFinanceAudit); } catch (e) { return clone(defaultFinanceAudit); } }
-      function loadMaterialIssues() { try { var stored = localStorage.getItem('mengedMaterialIssues'); return stored ? JSON.parse(stored) : clone(defaultMaterialIssues); } catch (e) { return clone(defaultMaterialIssues); } }
-      function persist() { localStorage.setItem('mengedFleetDemo', JSON.stringify(fleet)); }
-      function persistAuditors() { localStorage.setItem('mengedFinanceAuditors', JSON.stringify(auditors)); }
-      function persistFinanceAudit() { localStorage.setItem('mengedFinanceAudit', JSON.stringify(financeAudit)); }
-      function persistMaterialIssues() { localStorage.setItem('mengedMaterialIssues', JSON.stringify(materialIssues)); }
-      function saveAllData() { persist(); persistAuditors(); persistFinanceAudit(); persistMaterialIssues(); showToast('All fleet and finance data saved successfully in browser.'); }
+
+      // ---------------------------------------------------------------
+      // Backend API client. Every read/write now goes to the real
+      // database through the Express API — nothing is stored in
+      // localStorage anymore except the login token.
+      // ---------------------------------------------------------------
+      var API_BASE = window.location.origin + '/api';
+
+      function getToken() { return localStorage.getItem('mengedToken') || sessionStorage.getItem('mengedToken'); }
+      function getStoredUser() {
+        try { return JSON.parse(localStorage.getItem('mengedUser') || sessionStorage.getItem('mengedUser') || 'null'); }
+        catch (e) { return null; }
+      }
+      function clearSession() {
+        localStorage.removeItem('mengedToken'); localStorage.removeItem('mengedUser');
+        sessionStorage.removeItem('mengedToken'); sessionStorage.removeItem('mengedUser');
+      }
+      function goToLogin() { clearSession(); window.location.href = 'login.html'; }
+
+      function apiFetch(path, options) {
+        options = options || {};
+        var headers = options.headers || {};
+        headers['Authorization'] = 'Bearer ' + getToken();
+        if (options.body && !headers['Content-Type']) headers['Content-Type'] = 'application/json';
+        return fetch(API_BASE + path, {
+          method: options.method || 'GET',
+          headers: headers,
+          body: options.body
+        }).then(function (res) {
+          if (res.status === 401) { goToLogin(); throw new Error('Session expired'); }
+          return res.json().catch(function () { return {}; }).then(function (data) {
+            if (!res.ok) throw new Error(data.error || ('Request failed (' + res.status + ')'));
+            return data;
+          });
+        });
+      }
+      function apiGet(path) { return apiFetch(path); }
+      function apiPost(path, body) { return apiFetch(path, { method: 'POST', body: JSON.stringify(body) }); }
+      function apiPut(path, body) { return apiFetch(path, { method: 'PUT', body: JSON.stringify(body) }); }
+      function apiDelete(path) { return apiFetch(path, { method: 'DELETE' }); }
+
+      function saveAllData() {
+        reloadAllData().then(function () { showToast('Data refreshed from the server.'); });
+      }
       function exportAllData() { var exportPayload={exportedAt:new Date().toISOString(),fleet:fleet,auditors:auditors,financeAudit:financeAudit,materialIssues:materialIssues}; var exportUrl=URL.createObjectURL(new Blob([JSON.stringify(exportPayload,null,2)],{type:'application/json'})); var exportLink=document.createElement('a'); exportLink.href=exportUrl; exportLink.download='menged-fleet-backup.json'; exportLink.click(); setTimeout(function(){URL.revokeObjectURL(exportUrl);},1000); showToast('Full data backup exported.'); }
       function initials(value) { return value ? value.split(/\s+/).map(function (part) { return part.charAt(0); }).join('').slice(0,2).toUpperCase() : '—'; }
       function escapeHtml(value) { return String(value || '').replace(/[&<>'"]/g, function (char) { return {'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[char]; }); }
@@ -517,7 +536,7 @@
       function numericValue(value) { var number=Number(String(value===undefined||value===null?'':value).replace(/[, _]/g,'')); return isNaN(number)?0:number; }
 
       function renderFinance() {
-        var headers=financeAudit.headers||defaultFinanceAudit.headers;
+        var headers=financeAudit.headers||FALLBACK_FINANCE_HEADERS;
         var rows=financeAudit.rows||[];
         var totalIndex=headers.findIndex(function(header){return String(header).toLowerCase()==='total';});
         var onHandIndex=headers.findIndex(function(header){return String(header).toLowerCase()==='on hand';});
@@ -555,7 +574,7 @@
 
       function openFinanceRecord(rowIndex) {
         editingFinanceRowIndex = typeof rowIndex === 'number' ? rowIndex : -1;
-        var headers = financeAudit.headers || defaultFinanceAudit.headers;
+        var headers = financeAudit.headers || FALLBACK_FINANCE_HEADERS;
         var rows = financeAudit.rows || [];
         var totalIdx = headers.findIndex(function(h){return String(h).toLowerCase()==='total';});
         var onHandIdx = headers.findIndex(function(h){return String(h).toLowerCase()==='on hand';});
@@ -627,56 +646,49 @@
 
       function saveFinanceRecord(event) {
         event.preventDefault();
-        var headers = financeAudit.headers || defaultFinanceAudit.headers;
+        var headers = financeAudit.headers || FALLBACK_FINANCE_HEADERS;
         var rows = financeAudit.rows || [];
         var totalIdx = headers.findIndex(function(h){return String(h).toLowerCase()==='total';});
-        var onHandIdx = headers.findIndex(function(h){return String(h).toLowerCase()==='on hand';});
         if (totalIdx < 0) totalIdx = headers.length - 2;
-        if (onHandIdx < 0) onHandIdx = headers.length - 1;
 
         var name = document.getElementById('finCashierName').value.trim();
         var status = document.getElementById('finStatus').value;
-        var onHand = numericValue(document.getElementById('finOnHand').value);
+        var onHandRaw = document.getElementById('finOnHand').value;
 
-        var newRow = [];
-        if (editingFinanceRowIndex >= 0 && rows[editingFinanceRowIndex]) {
-          newRow[0] = rows[editingFinanceRowIndex][0];
-        } else {
-          newRow[0] = status === 'Activate' ? (rows.filter(function(r){return r[2]==='Activate';}).length + 1) : '';
-        }
-        newRow[1] = name;
-        newRow[2] = status;
-
-        var rowTotal = 0;
+        var periodValues = {};
         for (var c = 3; c < totalIdx; c++) {
           var inp = document.getElementById('finPeriod_' + c);
-          var val = inp ? (inp.value === '' ? '' : numericValue(inp.value)) : '';
-          newRow[c] = val;
-          rowTotal += numericValue(val);
-        }
-        newRow[totalIdx] = rowTotal;
-        newRow[onHandIdx] = onHand === 0 && document.getElementById('finOnHand').value === '' ? '' : onHand;
-
-        if (editingFinanceRowIndex >= 0 && rows[editingFinanceRowIndex]) {
-          rows[editingFinanceRowIndex] = newRow;
-          showToast('Updated card audit entry for ' + name + ' (' + status + ').');
-        } else {
-          rows.push(newRow);
-          showToast('Added card audit entry for ' + name + ' (' + status + ').');
+          periodValues[headers[c]] = inp ? inp.value : 0;
         }
 
-        financeAudit.rows = rows;
-        persistFinanceAudit();
-        renderFinance();
-        closeModal('financeRecordModal');
+        var payload = { cashierName: name, rowType: status, periodValues: periodValues, onHand: onHandRaw };
+        var isEdit = editingFinanceRowIndex >= 0 && rows[editingFinanceRowIndex] && financeAudit.recordIds && financeAudit.recordIds[editingFinanceRowIndex];
+        var request = isEdit
+          ? apiPut('/finance-audit/records/' + financeAudit.recordIds[editingFinanceRowIndex], payload)
+          : apiPost('/finance-audit/records', payload);
+
+        request
+          .then(function (data) {
+            financeAudit = data;
+            renderFinance();
+            closeModal('financeRecordModal');
+            showToast((isEdit ? 'Updated' : 'Added') + ' card audit entry for ' + name + ' (' + status + ').');
+          })
+          .catch(function (err) { showToast(err.message || 'Could not save this card audit entry.'); });
       }
 
       function deleteFinanceRecord(index) {
+        var recordId = financeAudit.recordIds && financeAudit.recordIds[index];
+        if (!recordId) return;
         if (confirm('Are you sure you want to delete this card audit record?')) {
-          financeAudit.rows.splice(index, 1);
-          persistFinanceAudit();
-          renderFinance();
-          showToast('Card audit record deleted.');
+          apiDelete('/finance-audit/records/' + recordId)
+            .then(function () { return apiGet('/finance-audit'); })
+            .then(function (data) {
+              financeAudit = data;
+              renderFinance();
+              showToast('Card audit record deleted.');
+            })
+            .catch(function (err) { showToast(err.message || 'Could not delete this record.'); });
         }
       }
 
@@ -685,26 +697,20 @@
         var colName = document.getElementById('newColName').value.trim();
         if (!colName) return;
 
-        var headers = financeAudit.headers || defaultFinanceAudit.headers;
-        var totalIdx = headers.findIndex(function(h){return String(h).toLowerCase()==='total';});
-        if (totalIdx < 0) totalIdx = headers.length - 2;
-
-        headers.splice(totalIdx, 0, colName);
-        financeAudit.rows.forEach(function(row){
-          row.splice(totalIdx, 0, 0);
-        });
-
-        financeAudit.headers = headers;
-        persistFinanceAudit();
-        renderFinance();
-        closeModal('financeColumnModal');
-        document.getElementById('newColName').value = '';
-        showToast('Added new column: "' + colName + '".');
+        apiPost('/finance-audit/columns', { label: colName })
+          .then(function (data) {
+            financeAudit = data;
+            renderFinance();
+            closeModal('financeColumnModal');
+            document.getElementById('newColName').value = '';
+            showToast('Added new column: "' + colName + '".');
+          })
+          .catch(function (err) { showToast(err.message || 'Could not add that column.'); });
       }
 
       function renderMaterials() {
         var matEl = document.getElementById('materialRows');
-        if(matEl) matEl.innerHTML=materialIssues.length?materialIssues.slice().reverse().map(function(issue){return '<tr><td>'+personCell(issue.cashier)+'</td><td><span class="pos">'+escapeHtml(issue.material)+'</span></td><td>'+escapeHtml(issue.quantity)+'</td><td>'+escapeHtml(issue.date)+'</td><td>'+escapeHtml(issue.notes||'—')+'</td></tr>';}).join(''):'<tr><td class="empty" colspan="5">No materials have been issued yet.</td></tr>';
+        if(matEl) matEl.innerHTML=materialIssues.length?materialIssues.map(function(issue){return '<tr><td>'+personCell(issue.cashier)+'</td><td><span class="pos">'+escapeHtml(issue.material)+'</span></td><td>'+escapeHtml(issue.quantity)+'</td><td>'+escapeHtml(issue.date)+'</td><td>'+escapeHtml(issue.notes||'—')+'</td></tr>';}).join(''):'<tr><td class="empty" colspan="5">No materials have been issued yet.</td></tr>';
       }
 
       function renderFleet() {
@@ -813,16 +819,20 @@
 
       function importFinanceGrid(grid,fileName) {
         if(!grid||grid.length<2){showToast('The card audit file needs headers and at least one record.');return;}
-        var headers=grid[0].slice(0,10).map(function(header,index){return String(header||defaultFinanceAudit.headers[index]||('Column '+(index+1))).trim();});
+        var headers=grid[0].slice(0,10).map(function(header,index){return String(header||FALLBACK_FINANCE_HEADERS[index]||('Column '+(index+1))).trim();});
         var nameIndex=headers.findIndex(function(header){return header.toLowerCase()==='name';});
         var statusIndex=headers.findIndex(function(header){return header.toLowerCase()==='status';});
         if(nameIndex<0||statusIndex<0){showToast('This file must include Name and Status columns like the card audit template.');return;}
         var records=grid.slice(1).filter(function(row){return row.some(function(value){return String(value===undefined||value===null?'':value).trim()!=='';});}).map(function(row){var record=[];for(var index=0;index<headers.length;index++)record.push(row[index]===undefined||row[index]===null?'':row[index]);if(!numericValue(record[8]))record[8]=record.slice(3,8).reduce(function(sum,value){return sum+numericValue(value);},0);return record;});
-        financeAudit={headers:headers,rows:records};
-        persistFinanceAudit();
-        renderFinance();
-        var statusEl = document.getElementById('financeImportStatus'); if(statusEl) statusEl.textContent=fileName+' imported · '+records.length+' card audit record'+(records.length===1?'':'s')+'.';
-        showToast('Card audit Excel data imported.');
+
+        apiPost('/finance-audit/import', { headers: headers, rows: records })
+          .then(function (data) {
+            financeAudit = data;
+            renderFinance();
+            var statusEl = document.getElementById('financeImportStatus'); if(statusEl) statusEl.textContent=fileName+' imported · '+records.length+' card audit record'+(records.length===1?'':'s')+'.';
+            showToast('Card audit Excel data imported.');
+          })
+          .catch(function (err) { showToast(err.message || 'Could not import this file.'); });
       }
 
       function readFinanceFile(file) {
@@ -945,14 +955,19 @@
       function importRecords() {
         var rows=mappedObjects();
         if(!rows.length)return;
-        rows.forEach(function(row,index){
-          fleet.push({id:'import-'+Date.now()+'-'+index,plate:row.plate,side:row.side||'—',type:row.type||'Bus',driver:row.driver||'',cashier:row.cashier||'',pos:row.pos||'',status:row.driver&&row.cashier?'Active':'Unassigned'});
+        var records = rows.map(function(row){
+          return {plate:row.plate,side:row.side||'—',type:row.type||'Bus',driver:row.driver||'',cashier:row.cashier||'',pos:row.pos||'',status:row.driver&&row.cashier?'Active':'Unassigned'};
         });
-        persist();
-        renderAll();
-        closeModal('importModal');
-        showToast(rows.length+' vehicle'+(rows.length===1?' was':'s were')+' added to the fleet.');
-        resetImport();
+        apiPost('/fleet/import', { records: records })
+          .then(function () { return apiGet('/fleet'); })
+          .then(function (data) {
+            fleet = data;
+            renderAll();
+            closeModal('importModal');
+            showToast(records.length+' vehicle'+(records.length===1?' was':'s were')+' added to the fleet.');
+            resetImport();
+          })
+          .catch(function (err) { showToast(err.message || 'Could not import these vehicles.'); });
       }
 
       function resetImport() {
@@ -1026,15 +1041,25 @@
         var id = document.getElementById('assignBus').value;
         var bus = fleet.find(function (item) { return item.id === id; });
         if (!bus) return;
-        bus.status = document.getElementById('assignStatus').value;
-        bus.driver = document.getElementById('assignDriver').value;
-        bus.cashier = document.getElementById('assignCashier').value;
-        bus.pos = document.getElementById('assignPos').value;
-        if (!bus.driver || !bus.cashier) bus.status = 'Unassigned';
-        persist();
-        renderAll();
-        closeModal('assignmentModal');
-        showToast(bus.plate + ' assignment saved.');
+        var status = document.getElementById('assignStatus').value;
+        var driver = document.getElementById('assignDriver').value;
+        var cashier = document.getElementById('assignCashier').value;
+        var pos = document.getElementById('assignPos').value;
+        if (!driver || !cashier) status = 'Unassigned';
+
+        var submitBtn = event.target.querySelector('button[type="submit"]');
+        if (submitBtn) submitBtn.disabled = true;
+
+        apiPut('/fleet/' + id, { status: status, driver: driver, cashier: cashier, pos: pos })
+          .then(function (updated) {
+            var idx = fleet.findIndex(function (item) { return item.id === id; });
+            if (idx > -1) fleet[idx] = updated;
+            renderAll();
+            closeModal('assignmentModal');
+            showToast(updated.plate + ' assignment saved.');
+          })
+          .catch(function (err) { showToast(err.message || 'Could not save assignment.'); })
+          .finally(function () { if (submitBtn) submitBtn.disabled = false; });
       });
 
       bindEvent('assignBus', 'change', function (event) {
@@ -1149,9 +1174,19 @@
       
       var userEl = document.querySelector('.user');
       if (userEl) {
+        var currentUser = getStoredUser();
+        if (currentUser) {
+          var avatarEl = userEl.querySelector('.avatar');
+          var nameEl = userEl.querySelector('.user-name');
+          var roleEl = userEl.querySelector('.user-role');
+          if (avatarEl) avatarEl.textContent = initials(currentUser.name);
+          if (nameEl) nameEl.textContent = currentUser.name;
+          if (roleEl) roleEl.textContent = currentUser.role === 'admin' ? 'Fleet administrator' : 'Staff';
+        }
         userEl.style.cursor = 'pointer';
+        userEl.title = 'Click to sign out';
         userEl.addEventListener('click', function() {
-          showToast('Signed in as Eyob A. (Fleet administrator)');
+          if (confirm('Sign out of Menged?')) goToLogin();
         });
       }
 
@@ -1185,30 +1220,28 @@
 
       bindEvent('auditorForm', 'submit', function (event) {
         event.preventDefault();
-        auditors.push({
-          id: 'fa-' + Date.now(),
+        var form = event.target;
+        apiPost('/auditors', {
           name: document.getElementById('auditorName').value.trim(),
           employeeId: document.getElementById('auditorId').value.trim(),
           phone: document.getElementById('auditorPhone').value.trim(),
           status: document.getElementById('auditorStatus').value
-        });
-        persistAuditors();
-        renderFinance();
-        closeModal('auditorModal');
-        event.target.reset();
-        showToast('Finance auditor saved.');
+        })
+          .then(function (created) {
+            auditors.push(created);
+            renderFinance();
+            closeModal('auditorModal');
+            form.reset();
+            showToast('Finance auditor saved.');
+          })
+          .catch(function (err) { showToast(err.message || 'Could not save auditor.'); });
       });
 
       bindEvent('resetData', 'click', function () {
-        localStorage.removeItem('mengedFleetDemo');
-        localStorage.removeItem('mengedFinanceAudit');
-        fleet = clone(seed);
-        financeAudit = clone(defaultFinanceAudit);
         activeFilter = 'all';
         var searchEl = document.getElementById('fleetSearch'); if (searchEl) searchEl.value = '';
         document.querySelectorAll('.tab').forEach(function (item) { item.classList.toggle('active', item.dataset.status === 'all'); });
-        renderAll();
-        showToast('Demo fleet and finance data restored.');
+        reloadAllData().then(function () { showToast('Data reloaded from the server.'); });
       });
 
       bindEvent('uploadFinanceAudit', 'click', function () { var fi = document.getElementById('financeFileInput'); if(fi) fi.click(); });
@@ -1219,19 +1252,23 @@
 
       bindEvent('materialForm', 'submit', function (event) {
         event.preventDefault();
-        materialIssues.push({
-          id: 'material-' + Date.now(),
+        var form = event.target;
+        apiPost('/materials', {
           cashier: document.getElementById('materialCashier').value,
           material: document.getElementById('materialType').value,
           quantity: document.getElementById('materialQuantity').value,
           date: document.getElementById('materialDate').value,
           notes: document.getElementById('materialNotes').value.trim()
-        });
-        persistMaterialIssues();
-        renderMaterials();
-        closeModal('materialModal');
-        event.target.reset();
-        showToast('Material issue saved for cashier.');
+        })
+          .then(function () { return apiGet('/materials'); })
+          .then(function (data) {
+            materialIssues = data;
+            renderMaterials();
+            closeModal('materialModal');
+            form.reset();
+            showToast('Material issue saved for cashier.');
+          })
+          .catch(function (err) { showToast(err.message || 'Could not save material issue.'); });
       });
 
       document.addEventListener('keydown', function (event) {
@@ -1242,8 +1279,36 @@
         }
       });
 
-      renderAll();
-      showView(window.location.hash.replace('#', '') || 'dashboard', false);
+      // ---------------------------------------------------------------
+      // Startup: require a logged-in session, then load real data from
+      // the database before showing anything.
+      // ---------------------------------------------------------------
+      function reloadAllData() {
+        return Promise.all([
+          apiGet('/fleet'),
+          apiGet('/auditors'),
+          apiGet('/finance-audit'),
+          apiGet('/materials')
+        ]).then(function (results) {
+          fleet = results[0];
+          auditors = results[1];
+          financeAudit = results[2];
+          materialIssues = results[3];
+          renderAll();
+        });
+      }
+
+      if (!getToken()) {
+        window.location.href = 'login.html';
+      } else {
+        reloadAllData()
+          .then(function () {
+            showView(window.location.hash.replace('#', '') || 'dashboard', false);
+          })
+          .catch(function (err) {
+            showToast(err.message || 'Could not load data from the server.');
+          });
+      }
     }());
   </script>
 
