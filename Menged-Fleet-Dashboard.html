@@ -7,6 +7,12 @@
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
     :root { --ink:#16231f; --muted:#74817d; --line:#e6ece9; --canvas:#f7f9f8; --white:#fff; --teal:#0b5d58; --teal-2:#087c73; --mint:#dff4ed; --gold:#f5b544; --red:#dc5f57; --slate:#334b46; --shadow:0 14px 40px rgba(25,57,49,.08); }
+    #dataLoadingOverlay { position:fixed; inset:0; z-index:500; background:var(--canvas); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; transition:opacity .25s ease; }
+    #dataLoadingOverlay.hidden { opacity:0; pointer-events:none; }
+    #dataLoadingOverlay .spinner-ring { width:34px; height:34px; border-radius:50%; border:3px solid var(--line); border-top-color:var(--teal); animation:menged-spin .8s linear infinite; }
+    #dataLoadingOverlay p { font-size:12.5px; color:var(--muted); font-weight:600; margin:0; }
+    #dataLoadingOverlay .load-brand { font-size:14px; font-weight:800; color:var(--ink); }
+    @keyframes menged-spin { to { transform:rotate(360deg); } }
     * { box-sizing:border-box; }
     html { scroll-behavior:smooth; }
     body { margin:0; color:var(--ink); background:var(--canvas); font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; font-size:14px; }
@@ -210,6 +216,7 @@
   </style>
 </head>
 <body>
+  <div id="dataLoadingOverlay"><div class="spinner-ring"></div><div class="load-brand">Menged</div><p>Loading your fleet data…</p></div>
   <div class="app">
     <aside class="sidebar">
       <div class="brand"><div class="brand-mark">↗</div><span>menged</span></div>
@@ -241,11 +248,12 @@
         <button class="help" id="openHelpModal">Help center</button>
         <button class="notice" id="openNoticeModal" aria-label="Notifications">♢</button>
         <div class="user" style="cursor: pointer;"><div class="avatar">EA</div><div><div class="user-name">Eyob A.</div><div class="user-role">Fleet administrator</div></div></div>
+        <button class="help" id="logoutButton" title="Sign out">Log out</button>
       </header>
       <div class="page" id="appContent">
         <section class="view active" id="dashboard" data-view-panel="dashboard">
         <section class="heading-row">
-          <div><h1>Good morning, Eyob <span style="font-size:23px">✦</span></h1><p class="subhead">Here is what is happening across your fleet today.</p></div>
+          <div><h1 id="greetingHeading">Good morning <span style="font-size:23px">✦</span></h1><p class="subhead">Here is what is happening across your fleet today.</p></div>
           
         </section>
         <section class="stats">
@@ -1182,13 +1190,19 @@
           if (avatarEl) avatarEl.textContent = initials(currentUser.name);
           if (nameEl) nameEl.textContent = currentUser.name;
           if (roleEl) roleEl.textContent = currentUser.role === 'admin' ? 'Fleet administrator' : 'Staff';
+
+          var greetingEl = document.getElementById('greetingHeading');
+          if (greetingEl) {
+            var hour = new Date().getHours();
+            var timeGreeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+            var firstName = currentUser.name.split(/\s+/)[0];
+            greetingEl.innerHTML = timeGreeting + ', ' + escapeHtml(firstName) + ' <span style="font-size:23px">✦</span>';
+          }
         }
-        userEl.style.cursor = 'pointer';
-        userEl.title = 'Click to sign out';
-        userEl.addEventListener('click', function() {
-          if (confirm('Sign out of Menged?')) goToLogin();
-        });
       }
+      bindEvent('logoutButton', 'click', function () {
+        if (confirm('Sign out of Menged?')) goToLogin();
+      });
 
       // Finance Audit Actions
       bindEvent('openFinanceRecordModal', 'click', function() { openFinanceRecord(-1); });
@@ -1304,9 +1318,18 @@
         reloadAllData()
           .then(function () {
             showView(window.location.hash.replace('#', '') || 'dashboard', false);
+            var overlay = document.getElementById('dataLoadingOverlay');
+            if (overlay) overlay.classList.add('hidden');
           })
           .catch(function (err) {
-            showToast(err.message || 'Could not load data from the server.');
+            var overlay = document.getElementById('dataLoadingOverlay');
+            if (overlay) {
+              overlay.innerHTML = '<div class="load-brand">Menged</div>'
+                + '<p style="max-width:280px;text-align:center">Could not load your data — ' + escapeHtml(err.message || 'the server may still be starting up') + '.</p>'
+                + '<button class="btn btn-primary" id="retryLoadBtn" type="button">Try again</button>';
+              var retryBtn = document.getElementById('retryLoadBtn');
+              if (retryBtn) retryBtn.addEventListener('click', function () { window.location.reload(); });
+            }
           });
       }
     }());
