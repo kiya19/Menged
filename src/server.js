@@ -12,7 +12,7 @@ const materialRoutes = require('./routes/materials.routes');
 
 if (!process.env.JWT_SECRET) {
   // eslint-disable-next-line no-console
-  console.warn('[auth] JWT_SECRET is not set — copy .env.example to .env first.');
+  console.warn('[auth] JWT_SECRET is not set — m9K2pL7xQ4wR8tY1vN5bJ3cF6hD0sA2eZ.env.example to .env first.');
 }
 
 const app = express();
@@ -37,8 +37,10 @@ app.use(cors({
 app.use(express.json());
 app.use(morgan('dev'));
 
-app.get('/', (req, res) => {
-  res.send('Menged backend is running');
+app.get('/api/health', async (req, res) => {
+  try {
+    await pool.query('select 1');
+    res.json({ ok: true, db: 'connected' });
 });
   } catch (err) {
     res.status(500).json({ ok: false, db: 'unreachable', error: err.message });
