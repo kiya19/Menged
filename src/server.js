@@ -1,5 +1,4 @@
 require('dotenv').config();
-const path = require('path');
 const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
@@ -45,21 +44,6 @@ app.get('/api/health', async (req, res) => {
   } catch (err) {
     res.status(500).json({ ok: false, db: 'unreachable', error: err.message });
   }
-});
-
-// Serve the frontend from this same service, so one Render deploy covers
-// both the API and the pages — no second static site needed.
-// (Your repo has everything at root, one level up from src/.)
-const FRONTEND_DIR = path.join(__dirname, '..');
-app.get(['/', '/login', '/login.html'], (req, res) => {
-  res.sendFile(path.join(FRONTEND_DIR, 'login.html'));
-});
-app.get(['/dashboard', '/Menged-Fleet-Dashboard.html'], (req, res) => {
-  res.sendFile(path.join(FRONTEND_DIR, 'Menged-Fleet-Dashboard.html'));
-});
-// The logo image login.html references directly by filename.
-app.get('/menged-hardware-team-logo.png', (req, res) => {
-  res.sendFile(path.join(FRONTEND_DIR, 'menged-hardware-team-logo.png'));
 });
 
 app.use('/api/auth', authRoutes);

@@ -7,12 +7,6 @@
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
     :root { --ink:#16231f; --muted:#74817d; --line:#e6ece9; --canvas:#f7f9f8; --white:#fff; --teal:#0b5d58; --teal-2:#087c73; --mint:#dff4ed; --gold:#f5b544; --red:#dc5f57; --slate:#334b46; --shadow:0 14px 40px rgba(25,57,49,.08); }
-    #dataLoadingOverlay { position:fixed; inset:0; z-index:500; background:var(--canvas); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; transition:opacity .25s ease; }
-    #dataLoadingOverlay.hidden { opacity:0; pointer-events:none; }
-    #dataLoadingOverlay .spinner-ring { width:34px; height:34px; border-radius:50%; border:3px solid var(--line); border-top-color:var(--teal); animation:menged-spin .8s linear infinite; }
-    #dataLoadingOverlay p { font-size:12.5px; color:var(--muted); font-weight:600; margin:0; }
-    #dataLoadingOverlay .load-brand { font-size:14px; font-weight:800; color:var(--ink); }
-    @keyframes menged-spin { to { transform:rotate(360deg); } }
     * { box-sizing:border-box; }
     html { scroll-behavior:smooth; }
     body { margin:0; color:var(--ink); background:var(--canvas); font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; font-size:14px; }
@@ -124,6 +118,20 @@
     .idle-status { color:#ae7509; background:#fff4dd; }
     .unassigned-status { color:#bd504a; background:#fff0ef; }
     .action { border:0; background:transparent; color:var(--teal); font-size:11px; font-weight:800; padding:4px 6px; cursor:pointer; border-radius:4px; }
+    .editable-cell { display:inline-flex; align-items:center; gap:7px; border-radius:8px; padding:5px 7px; margin:-5px -7px; cursor:text; transition:.15s; }
+    .editable-cell:hover, .editable-cell.editing { background:#eef6f3; }
+    .editable-cell .edit-hint { opacity:0; margin-left:7px; color:#8fa8a2; font-size:11px; transition:.15s; }
+    .editable-cell:hover .edit-hint { opacity:1; }
+    .editable-cell.editing .edit-hint { display:none; }
+    .cell-display { display:inline-flex; align-items:center; gap:7px; }
+    .cell-placeholder { color:#a0aaa7; font-style:italic; }
+    .cell-input { border:0; border-bottom:1.5px solid var(--teal-2); background:transparent; outline:0; padding:3px 1px; font-size:12px; font-weight:700; color:var(--ink); min-width:118px; font-family:inherit; }
+    .status-select { appearance:none; -webkit-appearance:none; -moz-appearance:none; border:0; border-radius:20px; padding:5px 22px 5px 10px; font-size:10px; font-weight:800; cursor:pointer; outline:0; background-repeat:no-repeat; background-position:right 8px center; background-size:8px 6px; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='6'%3E%3Cpath d='M0 0l4 6 4-6z' fill='%2374817d'/%3E%3C/svg%3E"); transition:.15s; }
+    .status-select:hover { filter:brightness(.97); }
+    .status-select:focus { box-shadow:0 0 0 3px rgba(11,93,88,.14); }
+    .status-select.active-status { color:#087d6a; background-color:#e5f5ef; }
+    .status-select.idle-status { color:#ae7509; background-color:#fff4dd; }
+    .status-select.unassigned-status { color:#bd504a; background-color:#fff0ef; }
     .action:hover { background:#e7f5f0; text-decoration:none; }
     .empty { padding:42px; text-align:center; color:var(--muted); font-size:12px; }
     .module-section { scroll-margin-top:96px; margin-top:24px; }
@@ -216,7 +224,11 @@
   </style>
 </head>
 <body>
-  <div id="dataLoadingOverlay"><div class="spinner-ring"></div><div class="load-brand">Menged</div><p>Loading your fleet data…</p></div>
+  <div id="cloudLoadingOverlay" style="position:fixed;inset:0;z-index:999;background:#f4f8f6;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;font-family:Inter,ui-sans-serif,system-ui,sans-serif;">
+    <div style="width:34px;height:34px;border-radius:50%;border:3px solid #d7e8e3;border-top-color:#0b5d58;animation:cloudspin .8s linear infinite;"></div>
+    <div style="color:#0b5d58;font-weight:800;font-size:13px;letter-spacing:.02em;" id="cloudLoadingText">Connecting to Menged Cloud…</div>
+    <style>@keyframes cloudspin{to{transform:rotate(360deg)}}</style>
+  </div>
   <div class="app">
     <aside class="sidebar">
       <div class="brand"><div class="brand-mark">↗</div><span>menged</span></div>
@@ -247,13 +259,13 @@
         <div class="crumb" id="topbarCrumb">Operations <span style="padding:0 7px">/</span> <b>Fleet overview</b></div>
         <button class="help" id="openHelpModal">Help center</button>
         <button class="notice" id="openNoticeModal" aria-label="Notifications">♢</button>
-        <div class="user" style="cursor: pointer;"><div class="avatar">EA</div><div><div class="user-name">Eyob A.</div><div class="user-role">Fleet administrator</div></div></div>
-        <button class="help" id="logoutButton" title="Sign out">Log out</button>
+        <button class="help" id="logoutBtn" title="Sign out">Sign out</button>
+        <div class="user" id="userChip" style="cursor: pointer;"><div class="avatar" id="userAvatar">EA</div><div><div class="user-name" id="userNameLabel">Eyob A.</div><div class="user-role" id="userRoleLabel">Fleet administrator</div></div></div>
       </header>
       <div class="page" id="appContent">
         <section class="view active" id="dashboard" data-view-panel="dashboard">
         <section class="heading-row">
-          <div><h1 id="greetingHeading">Good morning <span style="font-size:23px">✦</span></h1><p class="subhead">Here is what is happening across your fleet today.</p></div>
+          <div><h1>Good morning, Eyob <span style="font-size:23px">✦</span></h1><p class="subhead">Here is what is happening across your fleet today.</p></div>
           
         </section>
         <section class="stats">
@@ -268,12 +280,12 @@
         </section>
         </section>
         <section class="panel fleet-panel view" id="fleet" data-view-panel="fleet">
-          <div class="panel-head"><div><div class="panel-title">Fleet assignment board</div><div class="panel-note">Manage vehicle, driver, cashier, and POS relationships in one place.</div></div><button class="link-button" id="resetData">Reload from server</button></div>
+          <div class="panel-head"><div><div class="panel-title">Fleet assignment board</div><div class="panel-note">Manage vehicle, driver, cashier, and POS relationships in one place.</div></div><button class="link-button" id="resetData">Reset demo data</button></div>
           <div class="fleet-toolbar"><div class="tabs"><button class="tab active" data-status="all">All vehicles</button><button class="tab" data-status="Active">Active</button><button class="tab" data-status="Idle">Idle</button><button class="tab" data-status="Unassigned">Unassigned</button></div><input class="search" id="fleetSearch" placeholder="Search plate, driver, cashier, POS, or side no."></div>
           <div class="table-wrap"><table><thead><tr><th>Vehicle</th><th>Driver</th><th>Cashier</th><th>POS device</th><th>Status</th><th></th></tr></thead><tbody id="fleetRows"><tr><td><div class="bus-cell"><div class="vehicle-icon">▰</div><div><span class="bus-name">ET-3-84216</span><span class="bus-sub">M-024 · Minibus</span></div></div></td><td><div class="person"><span class="mini-avatar">ST</span><span>Samuel T.</span></div></td><td><span style="color:#a0aaa7">Not assigned</span></td><td><span class="pos">POS-018</span></td><td><span class="status unassigned-status">Unassigned</span></td><td><button class="action" data-edit="b1">Manage</button></td></tr><tr><td><div class="bus-cell"><div class="vehicle-icon">▰</div><div><span class="bus-name">ET-3-81604</span><span class="bus-sub">M-011 · Minibus</span></div></div></td><td><div class="person"><span class="mini-avatar">MG</span><span>Mulu G.</span></div></td><td><div class="person"><span class="mini-avatar">RM</span><span>Rahel M.</span></div></td><td><span class="pos">POS-012</span></td><td><span class="status active-status">Active</span></td><td><button class="action" data-edit="b2">Manage</button></td></tr><tr><td><div class="bus-cell"><div class="vehicle-icon">▰</div><div><span class="bus-name">ET-3-85472</span><span class="bus-sub">M-031 · City bus</span></div></div></td><td><div class="person"><span class="mini-avatar">KA</span><span>Kebede A.</span></div></td><td><div class="person"><span class="mini-avatar">TD</span><span>Tigist D.</span></div></td><td><span class="pos">POS-023</span></td><td><span class="status active-status">Active</span></td><td><button class="action" data-edit="b3">Manage</button></td></tr><tr><td><div class="bus-cell"><div class="vehicle-icon">▰</div><div><span class="bus-name">ET-3-83190</span><span class="bus-sub">M-019 · Minibus</span></div></div></td><td><div class="person"><span class="mini-avatar">HB</span><span>Henok B.</span></div></td><td><div class="person"><span class="mini-avatar">LK</span><span>Liya K.</span></div></td><td><span class="pos">POS-009</span></td><td><span class="status idle-status">Idle</span></td><td><button class="action" data-edit="b4">Manage</button></td></tr><tr><td><div class="bus-cell"><div class="vehicle-icon">▰</div><div><span class="bus-name">ET-3-87581</span><span class="bus-sub">M-044 · City bus</span></div></div></td><td><div class="person"><span class="mini-avatar">MN</span><span>Mesfin N.</span></div></td><td><div class="person"><span class="mini-avatar">SW</span><span>Sara W.</span></div></td><td><span class="pos">POS-031</span></td><td><span class="status active-status">Active</span></td><td><button class="action" data-edit="b5">Manage</button></td></tr><tr><td><div class="bus-cell"><div class="vehicle-icon">▰</div><div><span class="bus-name">ET-3-80211</span><span class="bus-sub">M-008 · Minibus</span></div></div></td><td><span style="color:#a0aaa7">Not assigned</span></td><td><div class="person"><span class="mini-avatar">MF</span><span>Marta F.</span></div></td><td><span class="pos">POS-004</span></td><td><span class="status unassigned-status">Unassigned</span></td><td><button class="action" data-edit="b6">Manage</button></td></tr><tr><td><div class="bus-cell"><div class="vehicle-icon">▰</div><div><span class="bus-name">ET-3-86733</span><span class="bus-sub">M-037 · Minibus</span></div></div></td><td><div class="person"><span class="mini-avatar">YA</span><span>Yonas A.</span></div></td><td><div class="person"><span class="mini-avatar">HE</span><span>Hana E.</span></div></td><td><span class="pos">POS-027</span></td><td><span class="status active-status">Active</span></td><td><button class="action" data-edit="b7">Manage</button></td></tr></tbody></table></div>
         </section>
         <section class="module-section panel view" id="drivers" data-view-panel="drivers"><div class="panel-head"><div><div class="panel-title">Drivers</div><div class="panel-note">Current drivers and their vehicle assignments.</div></div><button class="link-button" id="openDriverAssignments">Manage assignments →</button></div><div class="directory-list" id="driverDirectory"><div class="directory-row"><span class="mini-avatar">ST</span><div class="directory-name"><b>Samuel T.</b><span>ET-3-84216</span></div><span class="directory-count">1 vehicle</span></div><div class="directory-row"><span class="mini-avatar">MG</span><div class="directory-name"><b>Mulu G.</b><span>ET-3-81604</span></div><span class="directory-count">1 vehicle</span></div><div class="directory-row"><span class="mini-avatar">KA</span><div class="directory-name"><b>Kebede A.</b><span>ET-3-85472</span></div><span class="directory-count">1 vehicle</span></div><div class="directory-row"><span class="mini-avatar">HB</span><div class="directory-name"><b>Henok B.</b><span>ET-3-83190</span></div><span class="directory-count">1 vehicle</span></div><div class="directory-row"><span class="mini-avatar">MN</span><div class="directory-name"><b>Mesfin N.</b><span>ET-3-87581</span></div><span class="directory-count">1 vehicle</span></div><div class="directory-row"><span class="mini-avatar">YA</span><div class="directory-name"><b>Yonas A.</b><span>ET-3-86733</span></div><span class="directory-count">1 vehicle</span></div></div></section>
-        <section class="module-section panel view" id="cashiers" data-view-panel="cashiers"><div class="panel-head"><div><div class="panel-title">Cashiers</div><div class="panel-note">Current cashiers, linked POS devices, and issued materials.</div></div><div style="display:flex;gap:12px;align-items:center"><button class="link-button" id="openCashierAssignments">Manage assignments →</button><button class="btn" id="exportMaterials">Export materials</button><button class="btn btn-primary" id="openMaterialModal">＋ Issue material</button></div></div><div class="directory-list" id="cashierDirectory"><div class="directory-row"><span class="mini-avatar">RM</span><div class="directory-name"><b>Rahel M.</b><span>ET-3-81604</span></div><span class="directory-count">1 vehicle</span></div><div class="directory-row"><span class="mini-avatar">TD</span><div class="directory-name"><b>Tigist D.</b><span>ET-3-85472</span></div><span class="directory-count">1 vehicle</span></div><div class="directory-row"><span class="mini-avatar">LK</span><div class="directory-name"><b>Liya K.</b><span>ET-3-83190</span></div><span class="directory-count">1 vehicle</span></div><div class="directory-row"><span class="mini-avatar">SW</span><div class="directory-name"><b>Sara W.</b><span>ET-3-87581</span></div><span class="directory-count">1 vehicle</span></div><div class="directory-row"><span class="mini-avatar">MF</span><div class="directory-name"><b>Marta F.</b><span>ET-3-80211</span></div><span class="directory-count">1 vehicle</span></div><div class="directory-row"><span class="mini-avatar">HE</span><div class="directory-name"><b>Hana E.</b><span>ET-3-86733</span></div><span class="directory-count">1 vehicle</span></div></div><div class="section-divider"></div><div class="subsection-head"><div><b>Materials issued to cashiers</b><span>Record cable, charger, and other equipment issued to each cashier.</span></div></div><div class="table-wrap materials-table"><table><thead><tr><th>Cashier</th><th>Material</th><th>Quantity</th><th>Issue date</th><th>Notes</th></tr></thead><tbody id="materialRows"><tr><td><div class="person"><span class="mini-avatar">RM</span><span>Rahel M.</span></div></td><td><span class="pos">Cable</span></td><td>1</td><td>2026-08-06</td><td>—</td></tr><tr><td><div class="person"><span class="mini-avatar">TD</span><span>Tigist D.</span></div></td><td><span class="pos">Cable</span></td><td>1</td><td>2026-08-04</td><td>Replacement USB cable</td></tr><tr><td><div class="person"><span class="mini-avatar">RM</span><span>Rahel M.</span></div></td><td><span class="pos">Charger</span></td><td>1</td><td>2026-08-03</td><td>POS charging unit</td></tr></tbody></table></div></section>
+        <section class="module-section panel view" id="cashiers" data-view-panel="cashiers"><div class="panel-head"><div><div class="panel-title">Cashiers</div><div class="panel-note">Current cashiers, linked POS devices, and issued materials.</div></div><div style="display:flex;gap:12px;align-items:center"><button class="link-button" id="openCashierAssignments">Manage assignments →</button><button class="btn" id="exportMaterials">Export materials</button><button class="btn btn-primary" id="openMaterialModal">＋ Issue material</button></div></div><div class="directory-list" id="cashierDirectory"><div class="directory-row"><span class="mini-avatar">RM</span><div class="directory-name"><b>Rahel M.</b><span>ET-3-81604</span></div><span class="directory-count">1 vehicle</span></div><div class="directory-row"><span class="mini-avatar">TD</span><div class="directory-name"><b>Tigist D.</b><span>ET-3-85472</span></div><span class="directory-count">1 vehicle</span></div><div class="directory-row"><span class="mini-avatar">LK</span><div class="directory-name"><b>Liya K.</b><span>ET-3-83190</span></div><span class="directory-count">1 vehicle</span></div><div class="directory-row"><span class="mini-avatar">SW</span><div class="directory-name"><b>Sara W.</b><span>ET-3-87581</span></div><span class="directory-count">1 vehicle</span></div><div class="directory-row"><span class="mini-avatar">MF</span><div class="directory-name"><b>Marta F.</b><span>ET-3-80211</span></div><span class="directory-count">1 vehicle</span></div><div class="directory-row"><span class="mini-avatar">HE</span><div class="directory-name"><b>Hana E.</b><span>ET-3-86733</span></div><span class="directory-count">1 vehicle</span></div></div><div class="section-divider"></div><div class="subsection-head"><div><b>Materials issued to cashiers</b><span>Record cable, charger, and other equipment issued to each cashier.</span></div></div><div class="table-wrap materials-table"><table><thead><tr><th>Cashier</th><th>Material</th><th>Serial No.</th><th>Quantity</th><th>Issue date</th><th>Notes</th></tr></thead><tbody id="materialRows"><tr><td><div class="person"><span class="mini-avatar">RM</span><span>Rahel M.</span></div></td><td><span class="pos">Cable</span></td><td>1</td><td>2026-08-06</td><td>—</td></tr><tr><td><div class="person"><span class="mini-avatar">TD</span><span>Tigist D.</span></div></td><td><span class="pos">Cable</span></td><td>1</td><td>2026-08-04</td><td>Replacement USB cable</td></tr><tr><td><div class="person"><span class="mini-avatar">RM</span><span>Rahel M.</span></div></td><td><span class="pos">Charger</span></td><td>1</td><td>2026-08-03</td><td>POS charging unit</td></tr></tbody></table></div></section>
         <section class="module-section panel view" id="assignments" data-view-panel="assignments"><div class="panel-head"><div><div class="panel-title">Assignments</div><div class="panel-note">Review outstanding personnel and POS allocations.</div></div><button class="btn btn-primary" id="assignmentSectionButton">＋ New assignment</button></div><div class="assignment-summary" id="assignmentSummary"><div class="assignment-card"><div class="vehicle-icon">▰</div><div style="flex:1"><b>ET-3-84216 · M-024</b><span>Needs cashier assignment</span></div><button class="btn" data-open-bus="b1">Manage</button></div><div class="assignment-card"><div class="vehicle-icon">▰</div><div style="flex:1"><b>ET-3-80211 · M-008</b><span>Needs driver assignment</span></div><button class="btn" data-open-bus="b6">Manage</button></div></div></section>
         <section class="module-section panel view" id="reports" data-view-panel="reports"><div class="panel-head"><div><div class="panel-title">Reports</div><div class="panel-note">Today’s operational summary, ready for handover.</div></div><button class="btn" id="generateReport">Download summary</button></div><div class="report-cards"><div class="report-card"><span>Assigned vehicles</span><b id="reportAssigned">5</b></div><div class="report-card"><span>Personnel linked</span><b id="reportPersonnel">12</b></div><div class="report-card"><span>Open actions</span><b id="reportActions">2</b></div></div></section>
         <section class="module-section view" id="finance" data-view-panel="finance">
@@ -321,11 +333,11 @@
       </div>
     </main>
   </div>
-  <div class="modal-backdrop" id="assignmentModal"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="assignmentTitle"><div class="modal-head"><div><h2 id="assignmentTitle">Create assignment</h2><p>Link a driver, cashier, and POS terminal to a vehicle.</p></div><button class="close" data-close="assignmentModal">×</button></div><form id="assignmentForm"><div class="modal-body"><div class="context-bus" id="assignmentContext">Select a vehicle to continue.</div><div class="field-grid"><div><label for="assignBus">Vehicle</label><select class="input" id="assignBus" required=""></select></div><div><label for="assignStatus">Operating status</label><select class="input" id="assignStatus"><option>Active</option><option>Idle</option><option>Unassigned</option></select></div><div><label for="assignDriver">Driver</label><select class="input" id="assignDriver"></select></div><div><label for="assignCashier">Cashier</label><select class="input" id="assignCashier"></select></div><div><label for="assignPos">POS device</label><select class="input" id="assignPos"></select></div></div></div><div class="modal-foot"><button type="button" class="btn" data-close="assignmentModal">Cancel</button><button class="btn btn-primary" type="submit">Save assignment</button></div></form></div></div>
+
   <div class="modal-backdrop" id="auditorModal"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="auditorTitle"><div class="modal-head"><div><h2 id="auditorTitle">Add finance auditor</h2><p>Create an authorized reviewer for daily collections and POS reconciliation.</p></div><button class="close" data-close="auditorModal">×</button></div><form id="auditorForm"><div class="modal-body"><div class="field-grid"><div><label for="auditorName">Full name</label><input class="input" id="auditorName" required="" placeholder="e.g. Hana Bekele"></div><div><label for="auditorId">Employee ID</label><input class="input" id="auditorId" required="" placeholder="e.g. FA-012"></div><div><label for="auditorPhone">Phone number</label><input class="input" id="auditorPhone" placeholder="e.g. +251 9..."></div><div><label for="auditorStatus">Status</label><select class="input" id="auditorStatus"><option>Active</option><option>On leave</option></select></div></div></div><div class="modal-foot"><button type="button" class="btn" data-close="auditorModal">Cancel</button><button class="btn btn-primary" type="submit">Save auditor</button></div></form></div></div>
-  <div class="modal-backdrop" id="materialModal"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="materialTitle"><div class="modal-head"><div><h2 id="materialTitle">Issue material to cashier</h2><p>Record equipment provided to a cashier, such as a cable or charger.</p></div><button class="close" data-close="materialModal">×</button></div><form id="materialForm"><div class="modal-body"><div class="field-grid"><div><label for="materialCashier">Cashier</label><select class="input" id="materialCashier" required=""></select></div><div><label for="materialType">Material</label><select class="input" id="materialType"><option>Charger</option><option>Cable</option><option>POS case</option><option>SIM card</option><option>Receipt paper</option><option>Other</option></select></div><div><label for="materialQuantity">Quantity</label><input class="input" id="materialQuantity" min="1" type="number" value="1" required=""></div><div><label for="materialDate">Issue date</label><input class="input" id="materialDate" type="date" required=""></div></div><div style="margin-top:15px"><label for="materialNotes">Notes</label><input class="input" id="materialNotes" placeholder="Optional condition or reference"></div></div><div class="modal-foot"><button type="button" class="btn" data-close="materialModal">Cancel</button><button class="btn btn-primary" type="submit">Save issue</button></div></form></div></div>
+  <div class="modal-backdrop" id="materialModal"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="materialTitle"><div class="modal-head"><div><h2 id="materialTitle">Issue material to cashier</h2><p>Record equipment provided to a cashier, such as a cable or charger.</p></div><button class="close" data-close="materialModal">×</button></div><form id="materialForm"><div class="modal-body"><div class="field-grid"><div><label for="materialCashier">Cashier</label><select class="input" id="materialCashier" required=""></select></div><div><label for="materialType">Material</label><select class="input" id="materialType"><option>Charger</option><option>Cable</option><option>POS case</option><option>SIM card</option><option>Receipt paper</option><option>Other</option></select></div><div><label for="materialQuantity">Quantity</label><input class="input" id="materialQuantity" min="1" type="number" value="1" required=""></div><div><label for="materialDate">Issue date</label><input class="input" id="materialDate" type="date" required=""></div><div><label for="materialSerial">Serial No.</label><input class="input" id="materialSerial" placeholder="e.g. SN-2201394"></div></div><div style="margin-top:15px"><label for="materialNotes">Notes</label><input class="input" id="materialNotes" placeholder="Optional condition or reference"></div></div><div class="modal-foot"><button type="button" class="btn" data-close="materialModal">Cancel</button><button class="btn btn-primary" type="submit">Save issue</button></div></form></div></div>
   <div class="modal-backdrop" id="importModal"><div class="modal wide" role="dialog" aria-modal="true" aria-labelledby="importTitle"><div class="modal-head"><div><h2 id="importTitle">Import fleet data</h2><p>Upload a spreadsheet, map the columns, validate, then add records in one batch.</p></div><button class="close" data-close="importModal">×</button></div><div class="modal-body"><div class="dropzone" id="dropzone"><div class="upload-orb">⇪</div><b>Drop an Excel or CSV file here</b><span>or choose a file from your computer</span><button class="btn btn-primary" id="browseFile" type="button">Choose file</button><input type="file" id="fileInput" accept=".xlsx,.xls,.csv" hidden=""><div class="file-note">Supported formats: .xlsx, .xls, .csv · Maximum 5 MB</div></div><div class="import-workflow" id="importWorkflow"><div class="import-meta"><div class="file-chip" id="fileType">CSV</div><div style="flex:1"><b id="fileName">fleet.csv</b><span id="fileInfo">0 rows detected</span></div><button class="link-button" id="changeFile">Change file</button></div><div class="panel-title" style="margin:0 0 9px">Map your columns</div><div class="mapping" id="mappingControls"></div><div class="validation" id="validationMessage"></div><div class="panel-title" style="margin:0 0 9px">Preview</div><div class="preview-wrap"><table><thead id="previewHead"></thead><tbody id="previewBody"></tbody></table></div></div></div><div class="modal-foot"><button type="button" class="btn" data-close="importModal">Cancel</button><button class="btn btn-primary" id="importRecords" disabled="">Import valid records</button></div></div></div>
-  <div class="modal-backdrop" id="helpModal"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="helpTitle"><div class="modal-head"><div><h2 id="helpTitle">Menged Fleet Help Center</h2><p>Quick operational instructions and system guide.</p></div><button class="close" data-close="helpModal">×</button></div><div class="modal-body"><div style="display:grid;gap:15px"><div><b style="color:var(--teal)">Data Workspace</b><p style="margin:4px 0 0;color:var(--muted);font-size:12px">Use the "Upload data" button in the sidebar or header to import fleet records from Excel/CSV files. Use "Save data" to save all changes locally, or "Export data" to download a complete backup.</p></div><div><b style="color:var(--teal)">Managing Assignments</b><p style="margin:4px 0 0;color:var(--muted);font-size:12px">Click on any vehicle row or click "+ New assignment" to pair a driver, cashier, and POS terminal to a vehicle. Unassigned vehicles are automatically flagged in the attention queue.</p></div><div><b style="color:var(--teal)">Finance Card Audit</b><p style="margin:4px 0 0;color:var(--muted);font-size:12px">Click "+ Add entry" or click "Edit" on any row to add or edit active and corrupt card numbers per cashier. Use "+ Add month / day column" to add custom period dates.</p></div></div></div><div class="modal-foot"><button type="button" class="btn btn-primary" data-close="helpModal">Got it</button></div></div></div>
+  <div class="modal-backdrop" id="helpModal"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="helpTitle"><div class="modal-head"><div><h2 id="helpTitle">Menged Fleet Help Center</h2><p>Quick operational instructions and system guide.</p></div><button class="close" data-close="helpModal">×</button></div><div class="modal-body"><div style="display:grid;gap:15px"><div><b style="color:var(--teal)">Data Workspace</b><p style="margin:4px 0 0;color:var(--muted);font-size:12px">Use the "Upload data" button in the sidebar or header to import fleet records from Excel/CSV files. Use "Save data" to save all changes locally, or "Export data" to download a complete backup.</p></div><div><b style="color:var(--teal)">Managing Assignments</b><p style="margin:4px 0 0;color:var(--muted);font-size:12px">Click directly on any Driver, Cashier, or POS cell in the fleet table to type a name right there — press Enter or click away to save, or Escape to cancel. Click the status pill to change Active/Idle/Unassigned instantly. "Clear" resets a row. Unassigned vehicles are automatically flagged in the attention queue.</p></div><div><b style="color:var(--teal)">Finance Card Audit</b><p style="margin:4px 0 0;color:var(--muted);font-size:12px">Click "+ Add entry" or click "Edit" on any row to add or edit active and corrupt card numbers per cashier. Use "+ Add month / day column" to add custom period dates.</p></div></div></div><div class="modal-foot"><button type="button" class="btn btn-primary" data-close="helpModal">Got it</button></div></div></div>
   <div class="modal-backdrop" id="noticeModal"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="noticeTitle"><div class="modal-head"><div><h2 id="noticeTitle">Operational Notifications</h2><p>Recent system events and attention alerts.</p></div><button class="close" data-close="noticeModal">×</button></div><div class="modal-body"><div class="queue" style="padding:0"><div class="queue-row" style="cursor: pointer;"><div class="queue-symbol">!</div><div class="queue-content"><b>ET-3-84216 needs assignment</b><span>Driver or cashier unlinked on route Piassa — Megenagna</span></div><div class="queue-time">10m ago</div></div><div class="queue-row" style="cursor: pointer;"><div class="queue-symbol">✓</div><div class="queue-content"><b>POS-018 ready to pair</b><span>Unallocated POS terminal available</span></div><div class="queue-time">2h ago</div></div><div class="queue-row" style="cursor: pointer;"><div class="queue-symbol">◒</div><div class="queue-content"><b>2 vehicles due for inspection</b><span>ET-3-83190 scheduled for maintenance</span></div><div class="queue-time">Today</div></div></div></div><div class="modal-foot"><button type="button" class="btn btn-primary" data-close="noticeModal">Close notifications</button></div></div></div>
   
   <!-- Finance Record Add/Edit Modal -->
@@ -405,27 +417,70 @@
   <div class="toast" id="toast"></div>
   <script>
     (function () {
-      var seed = [
-        {id:'b1',plate:'ET-3-84216',side:'M-024',type:'Minibus',route:'Piassa — Megenagna',driver:'Samuel T.',cashier:'',pos:'POS-018',status:'Unassigned'},
-        {id:'b2',plate:'ET-3-81604',side:'M-011',type:'Minibus',route:'Mexico — Sar Bet',driver:'Mulu G.',cashier:'Rahel M.',pos:'POS-012',status:'Active'},
-        {id:'b3',plate:'ET-3-85472',side:'M-031',type:'City bus',route:'4 Kilo — Tor Hailoch',driver:'Kebede A.',cashier:'Tigist D.',pos:'POS-023',status:'Active'},
-        {id:'b4',plate:'ET-3-83190',side:'M-019',type:'Minibus',route:'Bole — Piazza',driver:'Henok B.',cashier:'Liya K.',pos:'POS-009',status:'Idle'},
-        {id:'b5',plate:'ET-3-87581',side:'M-044',type:'City bus',route:'Ayer Tena — Mexico',driver:'Mesfin N.',cashier:'Sara W.',pos:'POS-031',status:'Active'},
-        {id:'b6',plate:'ET-3-80211',side:'M-008',type:'Minibus',route:'Kality — Merkato',driver:'',cashier:'Marta F.',pos:'POS-004',status:'Unassigned'},
-        {id:'b7',plate:'ET-3-86733',side:'M-037',type:'Minibus',route:'Lebu — Bole',driver:'Yonas A.',cashier:'Hana E.',pos:'POS-027',status:'Active'}
-      ];
+      // ------------------------------------------------------------------
+      // Auth + API layer — this dashboard is now backed by the live
+      // Menged API (Express + Supabase), not browser localStorage.
+      // ------------------------------------------------------------------
+      var API_BASE = (function () {
+        var host = window.location.hostname;
+        var isLocal = host === 'localhost' || host === '127.0.0.1' || window.location.protocol === 'file:';
+        return isLocal ? 'http://localhost:4000/api' : 'https://menged-1.onrender.com/api';
+      })();
+
+      var authToken = localStorage.getItem('mengedToken') || sessionStorage.getItem('mengedToken');
+      var currentUser = null;
+      try {
+        currentUser = JSON.parse(localStorage.getItem('mengedUser') || sessionStorage.getItem('mengedUser') || 'null');
+      } catch (e) { currentUser = null; }
+      var isAdmin = !!(currentUser && currentUser.role === 'admin');
+
+      function goToLogin() {
+        localStorage.removeItem('mengedToken'); localStorage.removeItem('mengedUser');
+        sessionStorage.removeItem('mengedToken'); sessionStorage.removeItem('mengedUser');
+        window.location.href = 'login.html';
+      }
+
+      if (!authToken) {
+        goToLogin();
+        return; // stop this script from running further in a real browser
+      }
+
+      async function api(path, options) {
+        options = options || {};
+        var headers = Object.assign({ 'Content-Type': 'application/json' }, options.headers || {});
+        headers['Authorization'] = 'Bearer ' + authToken;
+        var res;
+        try {
+          res = await fetch(API_BASE + path, Object.assign({}, options, { headers: headers }));
+        } catch (networkErr) {
+          throw new Error("Can't reach the Menged server right now. Check your connection and try again.");
+        }
+        if (res.status === 401) { goToLogin(); throw new Error('Session expired.'); }
+        var data = null;
+        try { data = await res.json(); } catch (e) { data = null; }
+        if (!res.ok) { throw new Error((data && data.error) || ('Request failed (' + res.status + ')')); }
+        return data;
+      }
+      function apiGet(path) { return api(path); }
+      function apiPost(path, body) { return api(path, { method: 'POST', body: JSON.stringify(body || {}) }); }
+      function apiPut(path, body) { return api(path, { method: 'PUT', body: JSON.stringify(body || {}) }); }
+      function apiDelete(path) { return api(path, { method: 'DELETE' }); }
+
+      // ------------------------------------------------------------------
+      // In-memory cache of server data. Every render*() function below
+      // reads from these arrays; every write goes to the API first, then
+      // updates these arrays from the server's response.
+      // ------------------------------------------------------------------
       var defaultDrivers = ['Samuel T.','Mulu G.','Kebede A.','Henok B.','Mesfin N.','Yonas A.','Alemayehu S.'];
       var defaultCashiers = ['Rahel M.','Tigist D.','Liya K.','Sara W.','Marta F.','Hana E.','Betelhem A.'];
       var defaultPos = ['POS-004','POS-009','POS-012','POS-018','POS-023','POS-027','POS-031'];
-      // Real data now — loaded from the API by reloadAllData() at startup.
-      // These start empty and get filled in before the first render.
+      var defaultFinanceAudit = { headers: ['S/No','Name','Status','Total','On hand'], rows: [] };
+
       var fleet = [];
       var auditors = [];
-      var FALLBACK_FINANCE_HEADERS = ['S/No','Name','Status','Total','On hand'];
-      var financeAudit = { headers: FALLBACK_FINANCE_HEADERS.slice(), rows: [], recordIds: [] };
+      var financeAudit = { headers: defaultFinanceAudit.headers.slice(), rows: [], recordIds: [] };
       var materialIssues = [];
       var activeFilter = 'all';
-      var selectedBusId = '';
       var editingFinanceRowIndex = -1;
       var importState = {headers:[], rows:[], mapping:{}, fileName:''};
       var fields = [
@@ -439,48 +494,62 @@
 
       function clone(value) { return JSON.parse(JSON.stringify(value)); }
 
-      // ---------------------------------------------------------------
-      // Backend API client. Every read/write now goes to the real
-      // database through the Express API — nothing is stored in
-      // localStorage anymore except the login token.
-      // ---------------------------------------------------------------
-      var API_BASE = window.location.origin + '/api';
-
-      function getToken() { return localStorage.getItem('mengedToken') || sessionStorage.getItem('mengedToken'); }
-      function getStoredUser() {
-        try { return JSON.parse(localStorage.getItem('mengedUser') || sessionStorage.getItem('mengedUser') || 'null'); }
-        catch (e) { return null; }
+      function applyFinanceGrid(grid) {
+        financeAudit.headers = grid.headers;
+        financeAudit.rows = grid.rows;
+        financeAudit.recordIds = grid.recordIds;
       }
-      function clearSession() {
-        localStorage.removeItem('mengedToken'); localStorage.removeItem('mengedUser');
-        sessionStorage.removeItem('mengedToken'); sessionStorage.removeItem('mengedUser');
-      }
-      function goToLogin() { clearSession(); window.location.href = 'login.html'; }
 
-      function apiFetch(path, options) {
-        options = options || {};
-        var headers = options.headers || {};
-        headers['Authorization'] = 'Bearer ' + getToken();
-        if (options.body && !headers['Content-Type']) headers['Content-Type'] = 'application/json';
-        return fetch(API_BASE + path, {
-          method: options.method || 'GET',
-          headers: headers,
-          body: options.body
-        }).then(function (res) {
-          if (res.status === 401) { goToLogin(); throw new Error('Session expired'); }
-          return res.json().catch(function () { return {}; }).then(function (data) {
-            if (!res.ok) throw new Error(data.error || ('Request failed (' + res.status + ')'));
-            return data;
-          });
-        });
+      async function loadAllData() {
+        var results = await Promise.all([
+          apiGet('/fleet'),
+          apiGet('/auditors'),
+          apiGet('/materials'),
+          apiGet('/finance-audit'),
+        ]);
+        fleet = results[0];
+        auditors = results[1];
+        materialIssues = results[2];
+        applyFinanceGrid(results[3]);
       }
-      function apiGet(path) { return apiFetch(path); }
-      function apiPost(path, body) { return apiFetch(path, { method: 'POST', body: JSON.stringify(body) }); }
-      function apiPut(path, body) { return apiFetch(path, { method: 'PUT', body: JSON.stringify(body) }); }
-      function apiDelete(path) { return apiFetch(path, { method: 'DELETE' }); }
 
-      function saveAllData() {
-        reloadAllData().then(function () { showToast('Data refreshed from the server.'); });
+      async function initApp() {
+        var overlay = document.getElementById('cloudLoadingOverlay');
+        var overlayText = document.getElementById('cloudLoadingText');
+        if (currentUser) {
+          var nameEl = document.getElementById('userNameLabel');
+          var roleEl = document.getElementById('userRoleLabel');
+          var avEl = document.getElementById('userAvatar');
+          if (nameEl) nameEl.textContent = currentUser.name || currentUser.email;
+          if (roleEl) roleEl.textContent = currentUser.role === 'admin' ? 'Fleet administrator' : 'Staff';
+          if (avEl) avEl.textContent = initials(currentUser.name || currentUser.email || '');
+        }
+        try {
+          await loadAllData();
+          renderAll();
+          if (overlay) overlay.style.display = 'none';
+        } catch (err) {
+          if (overlayText) {
+            overlayText.textContent = err.message || "Can't reach the Menged server. Retrying…";
+            overlayText.style.color = '#bd504a';
+          }
+          // Retry once after a short delay — Render's free tier can take
+          // 30–50s to wake up from an idle "spun down" state.
+          setTimeout(function () {
+            if (overlayText) overlayText.textContent = 'Still connecting — the server may be waking up…';
+            initApp();
+          }, 4000);
+        }
+      }
+      async function saveAllData() {
+        showToast('Syncing with Menged Cloud…');
+        try {
+          await loadAllData();
+          renderAll();
+          showToast('Everything is up to date with Supabase.');
+        } catch (err) {
+          showToast(err.message || 'Could not sync right now.');
+        }
       }
       function exportAllData() { var exportPayload={exportedAt:new Date().toISOString(),fleet:fleet,auditors:auditors,financeAudit:financeAudit,materialIssues:materialIssues}; var exportUrl=URL.createObjectURL(new Blob([JSON.stringify(exportPayload,null,2)],{type:'application/json'})); var exportLink=document.createElement('a'); exportLink.href=exportUrl; exportLink.download='menged-fleet-backup.json'; exportLink.click(); setTimeout(function(){URL.revokeObjectURL(exportUrl);},1000); showToast('Full data backup exported.'); }
       function initials(value) { return value ? value.split(/\s+/).map(function (part) { return part.charAt(0); }).join('').slice(0,2).toUpperCase() : '—'; }
@@ -512,6 +581,7 @@
         link.download = 'Menged-Fleet-Dashboard.html';
         link.click();
         setTimeout(function () { URL.revokeObjectURL(link.href); }, 1000);
+        showToast('Menged-Fleet-Dashboard.html source code downloaded.');
       }
 
       function renderStats() {
@@ -543,7 +613,7 @@
       function numericValue(value) { var number=Number(String(value===undefined||value===null?'':value).replace(/[, _]/g,'')); return isNaN(number)?0:number; }
 
       function renderFinance() {
-        var headers=financeAudit.headers||FALLBACK_FINANCE_HEADERS;
+        var headers=financeAudit.headers||defaultFinanceAudit.headers;
         var rows=financeAudit.rows||[];
         var totalIndex=headers.findIndex(function(header){return String(header).toLowerCase()==='total';});
         var onHandIndex=headers.findIndex(function(header){return String(header).toLowerCase()==='on hand';});
@@ -581,7 +651,7 @@
 
       function openFinanceRecord(rowIndex) {
         editingFinanceRowIndex = typeof rowIndex === 'number' ? rowIndex : -1;
-        var headers = financeAudit.headers || FALLBACK_FINANCE_HEADERS;
+        var headers = financeAudit.headers || defaultFinanceAudit.headers;
         var rows = financeAudit.rows || [];
         var totalIdx = headers.findIndex(function(h){return String(h).toLowerCase()==='total';});
         var onHandIdx = headers.findIndex(function(h){return String(h).toLowerCase()==='on hand';});
@@ -651,73 +721,84 @@
         if (totalEl) totalEl.value = sum;
       }
 
-      function saveFinanceRecord(event) {
+      async function saveFinanceRecord(event) {
         event.preventDefault();
-        var headers = financeAudit.headers || FALLBACK_FINANCE_HEADERS;
+        var headers = financeAudit.headers || defaultFinanceAudit.headers;
         var rows = financeAudit.rows || [];
         var totalIdx = headers.findIndex(function(h){return String(h).toLowerCase()==='total';});
+        var onHandIdx = headers.findIndex(function(h){return String(h).toLowerCase()==='on hand';});
         if (totalIdx < 0) totalIdx = headers.length - 2;
+        if (onHandIdx < 0) onHandIdx = headers.length - 1;
 
         var name = document.getElementById('finCashierName').value.trim();
         var status = document.getElementById('finStatus').value;
-        var onHandRaw = document.getElementById('finOnHand').value;
+        var onHand = numericValue(document.getElementById('finOnHand').value);
+        var onHandRaw = document.getElementById('finOnHand').value === '' ? '' : onHand;
 
         var periodValues = {};
         for (var c = 3; c < totalIdx; c++) {
           var inp = document.getElementById('finPeriod_' + c);
-          periodValues[headers[c]] = inp ? inp.value : 0;
+          var val = inp ? (inp.value === '' ? 0 : numericValue(inp.value)) : 0;
+          periodValues[headers[c]] = val;
         }
 
         var payload = { cashierName: name, rowType: status, periodValues: periodValues, onHand: onHandRaw };
-        var isEdit = editingFinanceRowIndex >= 0 && rows[editingFinanceRowIndex] && financeAudit.recordIds && financeAudit.recordIds[editingFinanceRowIndex];
-        var request = isEdit
-          ? apiPut('/finance-audit/records/' + financeAudit.recordIds[editingFinanceRowIndex], payload)
-          : apiPost('/finance-audit/records', payload);
+        var submitBtn = event.target.querySelector('[type="submit"]');
+        if (submitBtn) submitBtn.disabled = true;
 
-        request
-          .then(function (data) {
-            financeAudit = data;
-            renderFinance();
-            closeModal('financeRecordModal');
-            showToast((isEdit ? 'Updated' : 'Added') + ' card audit entry for ' + name + ' (' + status + ').');
-          })
-          .catch(function (err) { showToast(err.message || 'Could not save this card audit entry.'); });
-      }
-
-      function deleteFinanceRecord(index) {
-        var recordId = financeAudit.recordIds && financeAudit.recordIds[index];
-        if (!recordId) return;
-        if (confirm('Are you sure you want to delete this card audit record?')) {
-          apiDelete('/finance-audit/records/' + recordId)
-            .then(function () { return apiGet('/finance-audit'); })
-            .then(function (data) {
-              financeAudit = data;
-              renderFinance();
-              showToast('Card audit record deleted.');
-            })
-            .catch(function (err) { showToast(err.message || 'Could not delete this record.'); });
+        try {
+          var grid;
+          if (editingFinanceRowIndex >= 0 && financeAudit.recordIds && financeAudit.recordIds[editingFinanceRowIndex]) {
+            grid = await apiPut('/finance-audit/records/' + financeAudit.recordIds[editingFinanceRowIndex], payload);
+            showToast('Updated card audit entry for ' + name + ' (' + status + ').');
+          } else {
+            grid = await apiPost('/finance-audit/records', payload);
+            showToast('Added card audit entry for ' + name + ' (' + status + ').');
+          }
+          applyFinanceGrid(grid);
+          renderFinance();
+          closeModal('financeRecordModal');
+        } catch (err) {
+          showToast(err.message || "Couldn't save that card audit entry.");
+        } finally {
+          if (submitBtn) submitBtn.disabled = false;
         }
       }
 
-      function addFinanceColumn(event) {
+      async function deleteFinanceRecord(index) {
+        if (!confirm('Are you sure you want to delete this card audit record?')) return;
+        var recordId = financeAudit.recordIds && financeAudit.recordIds[index];
+        if (!recordId) return;
+        try {
+          await apiDelete('/finance-audit/records/' + recordId);
+          var grid = await apiGet('/finance-audit');
+          applyFinanceGrid(grid);
+          renderFinance();
+          showToast('Card audit record deleted.');
+        } catch (err) {
+          showToast(err.message || "Couldn't delete that record.");
+        }
+      }
+
+      async function addFinanceColumn(event) {
         event.preventDefault();
         var colName = document.getElementById('newColName').value.trim();
         if (!colName) return;
-
-        apiPost('/finance-audit/columns', { label: colName })
-          .then(function (data) {
-            financeAudit = data;
-            renderFinance();
-            closeModal('financeColumnModal');
-            document.getElementById('newColName').value = '';
-            showToast('Added new column: "' + colName + '".');
-          })
-          .catch(function (err) { showToast(err.message || 'Could not add that column.'); });
+        try {
+          var grid = await apiPost('/finance-audit/columns', { label: colName });
+          applyFinanceGrid(grid);
+          renderFinance();
+          closeModal('financeColumnModal');
+          document.getElementById('newColName').value = '';
+          showToast('Added new column: "' + colName + '".');
+        } catch (err) {
+          showToast(err.message || "Couldn't add that column.");
+        }
       }
 
       function renderMaterials() {
         var matEl = document.getElementById('materialRows');
-        if(matEl) matEl.innerHTML=materialIssues.length?materialIssues.map(function(issue){return '<tr><td>'+personCell(issue.cashier)+'</td><td><span class="pos">'+escapeHtml(issue.material)+'</span></td><td>'+escapeHtml(issue.quantity)+'</td><td>'+escapeHtml(issue.date)+'</td><td>'+escapeHtml(issue.notes||'—')+'</td></tr>';}).join(''):'<tr><td class="empty" colspan="5">No materials have been issued yet.</td></tr>';
+        if(matEl) matEl.innerHTML=materialIssues.length?materialIssues.slice().reverse().map(function(issue){return '<tr><td>'+personCell(issue.cashier)+'</td><td><span class="pos">'+escapeHtml(issue.material)+'</span></td><td>'+(issue.serialNo?escapeHtml(issue.serialNo):'<span class="cell-placeholder">—</span>')+'</td><td>'+escapeHtml(issue.quantity)+'</td><td>'+escapeHtml(issue.date)+'</td><td>'+escapeHtml(issue.notes||'—')+'</td></tr>';}).join(''):'<tr><td class="empty" colspan="6">No materials have been issued yet.</td></tr>';
       }
 
       function renderFleet() {
@@ -732,42 +813,144 @@
         if(!tbody) return;
         if(!rows.length){tbody.innerHTML='<tr><td colspan="6" class="empty">No vehicles match these filters.</td></tr>';return;}
         tbody.innerHTML=rows.map(function(bus){
-          return '<tr><td><div class="bus-cell"><div class="vehicle-icon">▰</div><div><span class="bus-name">'+escapeHtml(bus.plate)+'</span><span class="bus-sub">'+escapeHtml(bus.side)+' · '+escapeHtml(bus.type)+'</span></div></div></td><td>'+personCell(bus.driver)+'</td><td>'+personCell(bus.cashier)+'</td><td><span class="pos">'+escapeHtml(bus.pos||'Not assigned')+'</span></td><td><span class="status '+statusClass(bus.status)+'">'+escapeHtml(bus.status)+'</span></td><td><button class="action" data-edit="'+bus.id+'">Manage</button></td></tr>';
+          return '<tr><td><div class="bus-cell"><div class="vehicle-icon">▰</div><div>'+editableCell(bus,'plate')+'<span class="bus-sub">'+escapeHtml(bus.side)+' · '+escapeHtml(bus.type)+'</span></div></div></td><td>'+editableCell(bus,'driver')+'</td><td>'+editableCell(bus,'cashier')+'</td><td>'+editableCell(bus,'pos')+'</td><td>'+statusCellHtml(bus)+'</td><td><button class="action" data-clear="'+bus.id+'">Clear</button></td></tr>';
         }).join('');
       }
 
       function personCell(name) { return name ? '<div class="person"><span class="mini-avatar">'+initials(name)+'</span><span>'+escapeHtml(name)+'</span></div>' : '<span style="color:#a0aaa7">Not assigned</span>'; }
       function optionList(values, selected, blank) { var first=blank ? '<option value="">'+blank+'</option>' : ''; return first+values.map(function(value){return '<option value="'+escapeHtml(value)+'"'+(value===selected?' selected':'')+'>'+escapeHtml(value)+'</option>';}).join(''); }
 
-      function populateAssignment(bus) {
-        var p=personnel();
-        var busSelect=document.getElementById('assignBus');
-        if(busSelect) {
-          busSelect.innerHTML=fleet.map(function(item){return '<option value="'+item.id+'">'+escapeHtml(item.plate)+' · '+escapeHtml(item.side)+'</option>';}).join('');
-          busSelect.value=bus.id;
+      // --- Inline, click-to-type editing for the fleet table (plate / driver / cashier / POS) ---
+      var fieldLabels = { plate:'plate number', driver:'driver', cashier:'cashier', pos:'POS' };
+      function personnelSuggestions(field) {
+        var p = personnel();
+        return field === 'driver' ? p.drivers : field === 'cashier' ? p.cashiers : p.pos;
+      }
+      function editableCell(bus, field) {
+        var value = bus[field] || '';
+        var display;
+        if (field === 'plate') {
+          display = '<span class="bus-name">'+escapeHtml(value)+'</span>';
+        } else if (field === 'pos') {
+          display = value ? '<span class="pos">'+escapeHtml(value)+'</span>' : '<span class="cell-placeholder">Add POS…</span>';
+        } else {
+          display = value
+            ? '<span class="mini-avatar">'+initials(value)+'</span><span class="cell-value">'+escapeHtml(value)+'</span>'
+            : '<span class="cell-placeholder">Add '+fieldLabels[field]+'…</span>';
         }
-        var statSelect=document.getElementById('assignStatus'); if(statSelect) statSelect.value=bus.status;
-        var drvSelect=document.getElementById('assignDriver'); if(drvSelect) drvSelect.innerHTML=optionList(p.drivers,bus.driver,'Unassigned');
-        var cshSelect=document.getElementById('assignCashier'); if(cshSelect) cshSelect.innerHTML=optionList(p.cashiers,bus.cashier,'Unassigned');
-        var posSelect=document.getElementById('assignPos'); if(posSelect) posSelect.innerHTML=optionList(p.pos,bus.pos,'Unassigned');
-        updateAssignmentContext(bus);
+        return '<div class="editable-cell" data-field="'+field+'" data-id="'+bus.id+'" tabindex="0">'
+          + '<span class="cell-display">'+display+'</span><span class="edit-hint">✎ click to write</span>'
+          + '</div>';
+      }
+      function enterCellEdit(cellEl) {
+        if (cellEl.classList.contains('editing')) return;
+        var id = cellEl.dataset.id, field = cellEl.dataset.field;
+        var bus = fleet.find(function (item) { return item.id === id; });
+        if (!bus) return;
+        cellEl.classList.add('editing');
+        var current = bus[field] || '';
+        var listId = 'suggest-' + field + '-' + id;
+        var hasSuggestions = (field === 'driver' || field === 'cashier' || field === 'pos');
+        var options = hasSuggestions ? personnelSuggestions(field).map(function (v) { return '<option value="' + escapeHtml(v) + '">'; }).join('') : '';
+        cellEl.querySelector('.cell-display').outerHTML =
+          '<input class="cell-input" type="text" value="' + escapeHtml(current) + '"' + (hasSuggestions ? ' list="' + listId + '"' : '') + ' placeholder="Type a ' + fieldLabels[field] + '…" autocomplete="off">'
+          + (hasSuggestions ? '<datalist id="' + listId + '">' + options + '</datalist>' : '');
+        var input = cellEl.querySelector('input');
+        input.focus();
+        input.select();
+      }
+      function exitCellEdit(cellEl, bus, field) {
+        cellEl.classList.remove('editing');
+        var value = bus[field] || '';
+        var display;
+        if (field === 'plate') {
+          display = '<span class="bus-name">'+escapeHtml(value)+'</span>';
+        } else if (field === 'pos') {
+          display = value ? '<span class="pos">'+escapeHtml(value)+'</span>' : '<span class="cell-placeholder">Add POS…</span>';
+        } else {
+          display = value
+            ? '<span class="mini-avatar">'+initials(value)+'</span><span class="cell-value">'+escapeHtml(value)+'</span>'
+            : '<span class="cell-placeholder">Add '+fieldLabels[field]+'…</span>';
+        }
+        cellEl.innerHTML = '<span class="cell-display">'+display+'</span><span class="edit-hint">✎ click to write</span>';
+      }
+      async function commitCellEdit(cellEl, cancel) {
+        // Guard: exitCellEdit removes 'editing' as its first act, so if a
+        // stray/duplicate blur fires after we've already committed (or
+        // cancelled), this bails out instead of re-applying a stale value.
+        if (!cellEl.classList.contains('editing')) return;
+        var id = cellEl.dataset.id, field = cellEl.dataset.field;
+        var bus = fleet.find(function (item) { return item.id === id; });
+        var input = cellEl.querySelector('input');
+        if (!bus || !input) { cellEl.classList.remove('editing'); return; }
+        if (cancel) { exitCellEdit(cellEl, bus, field); return; }
+
+        var newVal = input.value.trim();
+        if (field === 'plate' && !newVal) {
+          showToast("Plate number can't be empty — keeping the old one.");
+          exitCellEdit(cellEl, bus, field);
+          return;
+        }
+        if (field === 'plate' && newVal !== bus.plate && fleet.some(function (b) { return b.id !== bus.id && b.plate === newVal; })) {
+          showToast('Another vehicle already uses plate ' + newVal + '.');
+          exitCellEdit(cellEl, bus, field);
+          return;
+        }
+        if (newVal === (bus[field] || '')) {
+          exitCellEdit(cellEl, bus, field);
+          return;
+        }
+
+        var previous = clone(bus);
+        var payload = {}; payload[field] = newVal;
+        if (field === 'driver' || field === 'cashier') {
+          var willDriver = field === 'driver' ? newVal : bus.driver;
+          var willCashier = field === 'cashier' ? newVal : bus.cashier;
+          if (!willDriver || !willCashier) payload.status = 'Unassigned';
+          else if (bus.status === 'Unassigned') payload.status = 'Active';
+        }
+
+        input.disabled = true;
+        try {
+          var updated = await apiPut('/fleet/' + bus.id, payload);
+          Object.assign(bus, updated);
+          showToast(bus.plate + ' ' + fieldLabels[field] + ' updated.');
+          renderStats();
+          renderDirectories();
+          var row = cellEl.closest('tr');
+          var statusSel = row ? row.querySelector('.status-select') : null;
+          if (statusSel) {
+            statusSel.value = bus.status;
+            statusSel.className = 'status-select ' + statusClass(bus.status);
+          }
+        } catch (err) {
+          Object.assign(bus, previous);
+          showToast(err.message || "Couldn't save that change.");
+        }
+        exitCellEdit(cellEl, bus, field);
+      }
+      function statusCellHtml(bus) {
+        var cls = statusClass(bus.status);
+        return '<select class="status-select ' + cls + '" data-status-id="' + bus.id + '">'
+          + ['Active', 'Idle', 'Unassigned'].map(function (s) { return '<option value="' + s + '"' + (s === bus.status ? ' selected' : '') + '>' + s + '</option>'; }).join('')
+          + '</select>';
       }
 
-      function updateAssignmentContext(bus) {
-        var ctxEl = document.getElementById('assignmentContext'); if(ctxEl) ctxEl.innerHTML='<b>'+escapeHtml(bus.plate)+'</b> · '+escapeHtml(bus.side)+' · '+escapeHtml(bus.type);
-        var titleEl = document.getElementById('assignmentTitle'); if(titleEl) titleEl.textContent=selectedBusId?'Manage assignment':'Create assignment';
-      }
-
-      function openAssignment(id) {
-        selectedBusId=id||'';
-        var bus=id?fleet.find(function(item){return item.id===id;}):fleet[0];
-        if(!bus){showToast('Import a vehicle before creating an assignment.');return;}
-        populateAssignment(bus);
-        openModal('assignmentModal');
+      function jumpToFleetAndEdit(id, field) {
+        showView('fleet', true);
+        renderFleet();
+        setTimeout(function () {
+          var cell = document.querySelector('.editable-cell[data-field="' + (field || 'driver') + '"][data-id="' + id + '"]');
+          if (cell) {
+            if (cell.scrollIntoView) cell.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            enterCellEdit(cell);
+          }
+        }, 60);
       }
 
       function openModal(id) { var el=document.getElementById(id); if(el) el.classList.add('open'); }
       function closeModal(id) { var el=document.getElementById(id); if(el) el.classList.remove('open'); }
+
 
       function showToast(message) {
         var toast=document.getElementById('toast');
@@ -824,22 +1007,22 @@
         setTimeout(function(){URL.revokeObjectURL(csvUrl);},1000);
       }
 
-      function importFinanceGrid(grid,fileName) {
+      async function importFinanceGrid(grid,fileName) {
         if(!grid||grid.length<2){showToast('The card audit file needs headers and at least one record.');return;}
-        var headers=grid[0].slice(0,10).map(function(header,index){return String(header||FALLBACK_FINANCE_HEADERS[index]||('Column '+(index+1))).trim();});
+        var headers=grid[0].slice(0,10).map(function(header,index){return String(header||defaultFinanceAudit.headers[index]||('Column '+(index+1))).trim();});
         var nameIndex=headers.findIndex(function(header){return header.toLowerCase()==='name';});
         var statusIndex=headers.findIndex(function(header){return header.toLowerCase()==='status';});
         if(nameIndex<0||statusIndex<0){showToast('This file must include Name and Status columns like the card audit template.');return;}
         var records=grid.slice(1).filter(function(row){return row.some(function(value){return String(value===undefined||value===null?'':value).trim()!=='';});}).map(function(row){var record=[];for(var index=0;index<headers.length;index++)record.push(row[index]===undefined||row[index]===null?'':row[index]);if(!numericValue(record[8]))record[8]=record.slice(3,8).reduce(function(sum,value){return sum+numericValue(value);},0);return record;});
-
-        apiPost('/finance-audit/import', { headers: headers, rows: records })
-          .then(function (data) {
-            financeAudit = data;
-            renderFinance();
-            var statusEl = document.getElementById('financeImportStatus'); if(statusEl) statusEl.textContent=fileName+' imported · '+records.length+' card audit record'+(records.length===1?'':'s')+'.';
-            showToast('Card audit Excel data imported.');
-          })
-          .catch(function (err) { showToast(err.message || 'Could not import this file.'); });
+        try {
+          var result = await apiPost('/finance-audit/import', { headers: headers, rows: records });
+          applyFinanceGrid(result);
+          renderFinance();
+          var statusEl = document.getElementById('financeImportStatus'); if(statusEl) statusEl.textContent=fileName+' imported · '+records.length+' card audit record'+(records.length===1?'':'s')+'.';
+          showToast('Card audit Excel data imported to Supabase.');
+        } catch (err) {
+          showToast(err.message || "Couldn't import that file.");
+        }
       }
 
       function readFinanceFile(file) {
@@ -959,22 +1142,24 @@
         var pb = document.getElementById('previewBody'); if(pb) pb.innerHTML=data.slice(0,5).map(function(row){return '<tr>'+visible.map(function(field){return '<td>'+escapeHtml(row[field.key]||'—')+'</td>';}).join('')+'</tr>';}).join('');
       }
 
-      function importRecords() {
+      async function importRecords() {
         var rows=mappedObjects();
         if(!rows.length)return;
-        var records = rows.map(function(row){
-          return {plate:row.plate,side:row.side||'—',type:row.type||'Bus',driver:row.driver||'',cashier:row.cashier||'',pos:row.pos||'',status:row.driver&&row.cashier?'Active':'Unassigned'};
-        });
-        apiPost('/fleet/import', { records: records })
-          .then(function () { return apiGet('/fleet'); })
-          .then(function (data) {
-            fleet = data;
-            renderAll();
-            closeModal('importModal');
-            showToast(records.length+' vehicle'+(records.length===1?' was':'s were')+' added to the fleet.');
-            resetImport();
-          })
-          .catch(function (err) { showToast(err.message || 'Could not import these vehicles.'); });
+        var records=rows.map(function(row){return {plate:row.plate,side:row.side||'—',type:row.type||'Bus',driver:row.driver||'',cashier:row.cashier||'',pos:row.pos||'',status:row.driver&&row.cashier?'Active':'Unassigned'};});
+        var button=document.getElementById('importRecords');
+        if(button) button.disabled=true;
+        try {
+          var result = await apiPost('/fleet/import', { records: records });
+          fleet = await apiGet('/fleet');
+          renderAll();
+          closeModal('importModal');
+          showToast(result.imported+' vehicle'+(result.imported===1?' was':'s were')+' added to the fleet.');
+          resetImport();
+        } catch (err) {
+          showToast(err.message || "Couldn't import those vehicles.");
+        } finally {
+          if(button) button.disabled=false;
+        }
       }
 
       function resetImport() {
@@ -1025,6 +1210,9 @@
 
       // Safe Event Listeners Registration
       bindEvent('downloadSource', 'click', downloadHtmlSource);
+      bindEvent('logoutBtn', 'click', function () {
+        if (confirm('Sign out of Menged?')) goToLogin();
+      });
       bindEvent('fleetSearch', 'input', renderFleet);
 
       document.querySelectorAll('.tab').forEach(function (tab) {
@@ -1037,42 +1225,73 @@
       });
 
       bindEvent('fleetRows', 'click', function (event) {
-        var id = event.target.dataset.edit;
-        if (id) openAssignment(id);
+        var cell = event.target.closest && event.target.closest('.editable-cell');
+        if (cell) { enterCellEdit(cell); return; }
+        var clearId = event.target.dataset.clear;
+        if (clearId) {
+          var bus = fleet.find(function (item) { return item.id === clearId; });
+          if (bus) {
+            var previous = clone(bus);
+            var btn = event.target;
+            btn.disabled = true;
+            apiPut('/fleet/' + bus.id, { driver: '', cashier: '', pos: '', status: 'Unassigned' })
+              .then(function (updated) {
+                Object.assign(bus, updated);
+                renderAll();
+                showToast(bus.plate + ' assignment cleared.');
+              })
+              .catch(function (err) {
+                Object.assign(bus, previous);
+                showToast(err.message || "Couldn't clear that vehicle.");
+              })
+              .finally(function () { btn.disabled = false; });
+          }
+        }
       });
 
-      bindEvent('newAssignment', 'click', function () { openAssignment(''); });
+      (function () {
+        var fleetRowsEl = document.getElementById('fleetRows');
+        if (!fleetRowsEl) return;
+        fleetRowsEl.addEventListener('focusout', function (event) {
+          var cell = event.target.closest && event.target.closest('.editable-cell');
+          if (cell) commitCellEdit(cell, false);
+        });
+        fleetRowsEl.addEventListener('keydown', function (event) {
+          var cell = event.target.closest && event.target.closest('.editable-cell');
+          if (!cell) return;
+          if (event.key === 'Enter') { event.preventDefault(); commitCellEdit(cell, false); }
+          else if (event.key === 'Escape') { event.preventDefault(); commitCellEdit(cell, true); }
+        });
+        fleetRowsEl.addEventListener('change', function (event) {
+          var sel = event.target.closest && event.target.closest('.status-select');
+          if (!sel) return;
+          var id = sel.dataset.statusId;
+          var bus = fleet.find(function (item) { return item.id === id; });
+          if (!bus) return;
+          var previousStatus = bus.status;
+          sel.disabled = true;
+          apiPut('/fleet/' + id, { status: sel.value })
+            .then(function (updated) {
+              Object.assign(bus, updated);
+              sel.className = 'status-select ' + statusClass(bus.status);
+              renderStats();
+              renderDirectories();
+              showToast(bus.plate + ' status set to ' + bus.status + '.');
+            })
+            .catch(function (err) {
+              bus.status = previousStatus;
+              sel.value = previousStatus;
+              showToast(err.message || "Couldn't update status.");
+            })
+            .finally(function () { sel.disabled = false; });
+        });
+      })();
 
-      bindEvent('assignmentForm', 'submit', function (event) {
-        event.preventDefault();
-        var id = document.getElementById('assignBus').value;
-        var bus = fleet.find(function (item) { return item.id === id; });
-        if (!bus) return;
-        var status = document.getElementById('assignStatus').value;
-        var driver = document.getElementById('assignDriver').value;
-        var cashier = document.getElementById('assignCashier').value;
-        var pos = document.getElementById('assignPos').value;
-        if (!driver || !cashier) status = 'Unassigned';
-
-        var submitBtn = event.target.querySelector('button[type="submit"]');
-        if (submitBtn) submitBtn.disabled = true;
-
-        apiPut('/fleet/' + id, { status: status, driver: driver, cashier: cashier, pos: pos })
-          .then(function (updated) {
-            var idx = fleet.findIndex(function (item) { return item.id === id; });
-            if (idx > -1) fleet[idx] = updated;
-            renderAll();
-            closeModal('assignmentModal');
-            showToast(updated.plate + ' assignment saved.');
-          })
-          .catch(function (err) { showToast(err.message || 'Could not save assignment.'); })
-          .finally(function () { if (submitBtn) submitBtn.disabled = false; });
-      });
-
-      bindEvent('assignBus', 'change', function (event) {
-        selectedBusId = event.target.value;
-        var bus = fleet.find(function (item) { return item.id === selectedBusId; });
-        if (bus) populateAssignment(bus);
+      bindEvent('newAssignment', 'click', function () {
+        var target = fleet.find(function (b) { return b.status === 'Unassigned'; }) || fleet[0];
+        if (!target) { showToast('Import a vehicle before creating an assignment.'); return; }
+        var field = !target.driver ? 'driver' : !target.cashier ? 'cashier' : 'pos';
+        jumpToFleetAndEdit(target.id, field);
       });
 
       document.querySelectorAll('[data-close]').forEach(function (button) {
@@ -1118,9 +1337,9 @@
         row.style.cursor = 'pointer';
         row.addEventListener('click', function() {
           if (idx === 0) {
-            openAssignment('b1');
+            jumpToFleetAndEdit('b1', 'cashier');
           } else if (idx === 1) {
-            openAssignment('b1');
+            jumpToFleetAndEdit('b1', 'pos');
           } else {
             activeFilter = 'Idle';
             document.querySelectorAll('.tab').forEach(function (item) { item.classList.toggle('active', item.dataset.status === 'Idle'); });
@@ -1132,11 +1351,20 @@
 
       bindEvent('openDriverAssignments', 'click', function () { showView('fleet', true); });
       bindEvent('openCashierAssignments', 'click', function () { showView('fleet', true); });
-      bindEvent('assignmentSectionButton', 'click', function () { openAssignment(''); });
-      
+      bindEvent('assignmentSectionButton', 'click', function () {
+        var target = fleet.find(function (b) { return b.status === 'Unassigned'; }) || fleet[0];
+        if (!target) { showToast('Import a vehicle before creating an assignment.'); return; }
+        var field = !target.driver ? 'driver' : !target.cashier ? 'cashier' : 'pos';
+        jumpToFleetAndEdit(target.id, field);
+      });
+
       bindEvent('assignmentSummary', 'click', function (event) {
         var id = event.target.dataset.openBus;
-        if (id) openAssignment(id);
+        if (!id) return;
+        var bus = fleet.find(function (item) { return item.id === id; });
+        var field = 'driver';
+        if (bus) { field = !bus.driver ? 'driver' : !bus.cashier ? 'cashier' : 'pos'; }
+        jumpToFleetAndEdit(id, field);
       });
 
       bindEvent('generateReport', 'click', function () {
@@ -1181,27 +1409,11 @@
       
       var userEl = document.querySelector('.user');
       if (userEl) {
-        var currentUser = getStoredUser();
-        if (currentUser) {
-          var avatarEl = userEl.querySelector('.avatar');
-          var nameEl = userEl.querySelector('.user-name');
-          var roleEl = userEl.querySelector('.user-role');
-          if (avatarEl) avatarEl.textContent = initials(currentUser.name);
-          if (nameEl) nameEl.textContent = currentUser.name;
-          if (roleEl) roleEl.textContent = currentUser.role === 'admin' ? 'Fleet administrator' : 'Staff';
-
-          var greetingEl = document.getElementById('greetingHeading');
-          if (greetingEl) {
-            var hour = new Date().getHours();
-            var timeGreeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
-            var firstName = currentUser.name.split(/\s+/)[0];
-            greetingEl.innerHTML = timeGreeting + ', ' + escapeHtml(firstName) + ' <span style="font-size:23px">✦</span>';
-          }
-        }
+        userEl.style.cursor = 'pointer';
+        userEl.addEventListener('click', function() {
+          showToast('Signed in as Eyob A. (Fleet administrator)');
+        });
       }
-      bindEvent('logoutButton', 'click', function () {
-        if (confirm('Sign out of Menged?')) goToLogin();
-      });
 
       // Finance Audit Actions
       bindEvent('openFinanceRecordModal', 'click', function() { openFinanceRecord(-1); });
@@ -1231,30 +1443,41 @@
 
       bindEvent('openAuditorModal', 'click', function () { openModal('auditorModal'); });
 
-      bindEvent('auditorForm', 'submit', function (event) {
+      bindEvent('auditorForm', 'submit', async function (event) {
         event.preventDefault();
-        var form = event.target;
-        apiPost('/auditors', {
-          name: document.getElementById('auditorName').value.trim(),
-          employeeId: document.getElementById('auditorId').value.trim(),
-          phone: document.getElementById('auditorPhone').value.trim(),
-          status: document.getElementById('auditorStatus').value
-        })
-          .then(function (created) {
-            auditors.push(created);
-            renderFinance();
-            closeModal('auditorModal');
-            form.reset();
-            showToast('Finance auditor saved.');
-          })
-          .catch(function (err) { showToast(err.message || 'Could not save auditor.'); });
+        var submitBtn = event.target.querySelector('[type="submit"]');
+        if (submitBtn) submitBtn.disabled = true;
+        try {
+          var created = await apiPost('/auditors', {
+            name: document.getElementById('auditorName').value.trim(),
+            employeeId: document.getElementById('auditorId').value.trim(),
+            phone: document.getElementById('auditorPhone').value.trim(),
+            status: document.getElementById('auditorStatus').value
+          });
+          auditors.push(created);
+          renderFinance();
+          closeModal('auditorModal');
+          event.target.reset();
+          showToast('Finance auditor saved.');
+        } catch (err) {
+          showToast(err.message || "Couldn't save that auditor.");
+        } finally {
+          if (submitBtn) submitBtn.disabled = false;
+        }
       });
 
-      bindEvent('resetData', 'click', function () {
+      bindEvent('resetData', 'click', async function () {
         activeFilter = 'all';
         var searchEl = document.getElementById('fleetSearch'); if (searchEl) searchEl.value = '';
         document.querySelectorAll('.tab').forEach(function (item) { item.classList.toggle('active', item.dataset.status === 'all'); });
-        reloadAllData().then(function () { showToast('Data reloaded from the server.'); });
+        showToast('Reloading from Menged Cloud…');
+        try {
+          await loadAllData();
+          renderAll();
+          showToast('Reloaded the latest data from Supabase.');
+        } catch (err) {
+          showToast(err.message || "Couldn't reload right now.");
+        }
       });
 
       bindEvent('uploadFinanceAudit', 'click', function () { var fi = document.getElementById('financeFileInput'); if(fi) fi.click(); });
@@ -1263,26 +1486,29 @@
       bindEvent('openMaterialModal', 'click', openMaterialIssue);
       bindEvent('exportMaterials', 'click', exportMaterials);
 
-      bindEvent('materialForm', 'submit', function (event) {
+      bindEvent('materialForm', 'submit', async function (event) {
         event.preventDefault();
-        var form = event.target;
-        apiPost('/materials', {
-          cashier: document.getElementById('materialCashier').value,
-          material: document.getElementById('materialType').value,
-          quantity: document.getElementById('materialQuantity').value,
-          serial: document.getElementById('materialQuantity').value,
-          date: document.getElementById('materialDate').value,
-          notes: document.getElementById('materialNotes').value.trim()
-        })
-          .then(function () { return apiGet('/materials'); })
-          .then(function (data) {
-            materialIssues = data;
-            renderMaterials();
-            closeModal('materialModal');
-            form.reset();
-            showToast('Material issue saved for cashier.');
-          })
-          .catch(function (err) { showToast(err.message || 'Could not save material issue.'); });
+        var submitBtn = event.target.querySelector('[type="submit"]');
+        if (submitBtn) submitBtn.disabled = true;
+        try {
+          var created = await apiPost('/materials', {
+            cashier: document.getElementById('materialCashier').value,
+            material: document.getElementById('materialType').value,
+            quantity: document.getElementById('materialQuantity').value,
+            date: document.getElementById('materialDate').value,
+            notes: document.getElementById('materialNotes').value.trim(),
+            serialNo: document.getElementById('materialSerial').value.trim()
+          });
+          materialIssues.push(created);
+          renderMaterials();
+          closeModal('materialModal');
+          event.target.reset();
+          showToast('Material issue saved for cashier.');
+        } catch (err) {
+          showToast(err.message || "Couldn't save that material issue.");
+        } finally {
+          if (submitBtn) submitBtn.disabled = false;
+        }
       });
 
       document.addEventListener('keydown', function (event) {
@@ -1293,45 +1519,8 @@
         }
       });
 
-      // ---------------------------------------------------------------
-      // Startup: require a logged-in session, then load real data from
-      // the database before showing anything.
-      // ---------------------------------------------------------------
-      function reloadAllData() {
-        return Promise.all([
-          apiGet('/fleet'),
-          apiGet('/auditors'),
-          apiGet('/finance-audit'),
-          apiGet('/materials')
-        ]).then(function (results) {
-          fleet = results[0];
-          auditors = results[1];
-          financeAudit = results[2];
-          materialIssues = results[3];
-          renderAll();
-        });
-      }
-
-      if (!getToken()) {
-        window.location.href = 'login.html';
-      } else {
-        reloadAllData()
-          .then(function () {
-            showView(window.location.hash.replace('#', '') || 'dashboard', false);
-            var overlay = document.getElementById('dataLoadingOverlay');
-            if (overlay) overlay.classList.add('hidden');
-          })
-          .catch(function (err) {
-            var overlay = document.getElementById('dataLoadingOverlay');
-            if (overlay) {
-              overlay.innerHTML = '<div class="load-brand">Menged</div>'
-                + '<p style="max-width:280px;text-align:center">Could not load your data — ' + escapeHtml(err.message || 'the server may still be starting up') + '.</p>'
-                + '<button class="btn btn-primary" id="retryLoadBtn" type="button">Try again</button>';
-              var retryBtn = document.getElementById('retryLoadBtn');
-              if (retryBtn) retryBtn.addEventListener('click', function () { window.location.reload(); });
-            }
-          });
-      }
+      initApp();
+      showView(window.location.hash.replace('#', '') || 'dashboard', false);
     }());
   </script>
 

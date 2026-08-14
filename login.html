@@ -255,7 +255,7 @@
 <script>
   // Local dev (file:// or localhost) talks to your local API.
   // Everywhere else (once this page is hosted publicly) talks to the
-  // deployed Render backend.
+  // deployed Render backend — update the URL below after you deploy.
   const API_BASE = (() => {
     const host = window.location.hostname;
     const isLocal = host === 'localhost' || host === '127.0.0.1' || window.location.protocol === 'file:';

@@ -59,10 +59,9 @@ from `GET /api/auth/users`).
    automatically and shows one service: `menged-backend`.
 3. Before deploying, fill in the two env vars it flags as needed:
    - `DATABASE_URL` → the Supabase connection string from step 2.
-   - `CORS_ORIGIN` → `*` is fine here — since the frontend is served from
-     this same service (see step 5 below), it's same-origin and CORS
-     doesn't really come into play. `*` only matters if something external
-     ever calls this API directly.
+   - `CORS_ORIGIN` → the origin(s) your frontend will be served from,
+     comma-separated. If you don't know it yet, use `*` for now and tighten
+     it once your frontend has a real URL.
    - `JWT_SECRET` is generated for you automatically — leave it.
 4. Click **Apply**. First deploy takes 2–3 minutes.
 5. Once live, check `https://menged-backend.onrender.com/api/health` (your
@@ -88,18 +87,26 @@ return isLocal
 Locally (opening the file directly, or `localhost`) it still talks to your
 local backend automatically — no edit needed for that case.
 
-## 5. That's it — one service, one URL
+## 5. Put the frontend somewhere public
 
-Earlier versions of this guide had you deploy the frontend as a second
-Render service. That's no longer needed: `src/server.js` now serves
-`login.html` and the dashboard directly from the same backend service, so
-`https://menged.onrender.com` shows your login page and
-`https://menged.onrender.com/dashboard` shows the fleet dashboard — both
-from the one service you already deployed.
+`login.html` (and your dashboard, once it's wired to the API — see the
+main README's "Wiring up the frontend" section) are static files, so any
+static host works. Two easy options:
+
+- **Render Static Site** — same dashboard, **New +** → **Static Site**,
+  point it at a repo containing `login.html`/the dashboard, no build command
+  needed for plain HTML.
+- **GitHub Pages** — push the HTML files to a repo, enable Pages in repo
+  settings. Free, no separate account needed if you already have GitHub.
+
+Whichever you pick, once you know that URL, go back to Render's
+`CORS_ORIGIN` env var and set it to that exact origin (e.g.
+`https://menged.onrender.com` or `https://<you>.github.io`) instead of `*`.
 
 ## Quick reference
 
-| Piece | Where | Public URL |
+| Piece | Where | Public URL pattern |
 |---|---|---|
 | Database | Supabase Cloud | (not public — only the API talks to it) |
-| API + login page + dashboard | Render (this repo) | `https://menged.onrender.com` |
+| API | Render (this repo) | `https://menged-backend.onrender.com` |
+| Login page + dashboard | Render Static Site or GitHub Pages | `https://menged.onrender.com` or `https://<you>.github.io/...` |
