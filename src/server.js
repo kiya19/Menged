@@ -18,6 +18,15 @@ if (!process.env.JWT_SECRET) {
 const app = express();
 app.set('trust proxy', 1); // Render (and most hosts) sit behind a reverse proxy
 
+app.get('/', (req, res) => {
+  res.json({
+    service: 'Menged Fleet Operations API',
+    status: 'running',
+    health: '/api/health',
+    docs: 'This is the backend API — the dashboard lives at your frontend URL, not here.',
+  });
+});
+
 // CORS_ORIGIN accepts a comma-separated list, e.g.
 // "http://127.0.0.1:5500,https://menged-dashboard.onrender.com"
 // so the same deploy can serve local dev and a public frontend at once.
