@@ -12,7 +12,7 @@ const materialRoutes = require('./routes/materials.routes');
 
 if (!process.env.JWT_SECRET) {
   // eslint-disable-next-line no-console
-  console.warn('[auth] JWT_SECRET is not set — copy.env.m9K2pL7xQ4wR8tY1vN5bJ3cF6hD0sA2eZ to .env first.');
+  console.warn('[auth] JWT_SECRET is not set — copy.env.to .env first.');
 }
 
 const app = express();
