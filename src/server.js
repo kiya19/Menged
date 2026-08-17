@@ -12,7 +12,7 @@ const materialRoutes = require('./routes/materials.routes');
 
 if (!process.env.JWT_SECRET) {
   // eslint-disable-next-line no-console
-  console.warn('[auth] JWT_SECRET is not set — copy.env.example to .env first.');
+  console.warn('[auth] JWT_SECRET is not set — copy .env.example to .env first.');
 }
 
 const app = express();
@@ -41,7 +41,6 @@ app.get('/api/health', async (req, res) => {
   try {
     await pool.query('select 1');
     res.json({ ok: true, db: 'connected' });
-});
   } catch (err) {
     res.status(500).json({ ok: false, db: 'unreachable', error: err.message });
   }
