@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#051917">
+  <title>Menged | Staff Sign In</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%230a3735'/%3E%3Crect x='9' y='9' width='34' height='34' rx='11' fill='%23bcebdc' transform='rotate(-5 26 26)'/%3E%3Cpath d='M20 34 L34 20 M34 20 H24 M34 20 V30' stroke='%2307564f' stroke-width='3.4' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3C/svg%3E">
+  <style>
+    :root {
+      --ink:#16231f; --muted:#74817d; --line:#e6ece9; --canvas:#f7f9f8; --white:#fff;
+      --teal:#0b5d58; --teal-2:#087c73; --mint:#dff4ed; --gold:#f5b544; --red:#dc5f57; --slate:#334b46;
+      --pine:#0a3735; --pine-dark:#051917;
+      --frost:#eaf6f1;
+      --shadow:0 14px 40px rgba(25,57,49,.08);
+    }
+    * { box-sizing:border-box; }
+    html { scroll-behavior:smooth; height:100%; }
+    body {
+      margin:0; min-height:100%; color:var(--ink);
+      background:radial-gradient(120% 100% at 50% 10%, #1c5a51 0%, #12463f 32%, #0a352f 60%, #051917 100%);
+      font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      font-size:14px;
+    }
+    button, input { font:inherit; }
+    button { cursor:pointer; }
+    a { color:inherit; }
+
+    .shell { min-height:100vh; display:flex; align-items:stretch; }
+
+    .brand-mark {
+      width:36px; height:36px; border-radius:12px; display:grid; place-items:center;
+      background:#bcebdc; color:#07564f; font-size:20px; font-weight:800; transform:rotate(-5deg);
+      box-shadow:0 6px 16px rgba(0,0,0,.25);
+    }
+    .brand-name { font-weight:800; font-size:21px; letter-spacing:-.6px; }
+    .brand-sub { font-size:10px; color:#8db4ad; text-transform:uppercase; letter-spacing:1.3px; font-weight:800; margin-top:1px; }
+
+    /* ===================== FORM PANEL ===================== */
+    .auth-panel {
+      position:relative; overflow:hidden; width:100%;
+      min-height:100vh; display:flex; align-items:center; justify-content:center;
+      padding:40px 32px;
+      background:radial-gradient(120% 100% at 50% 0%, #1c5a51 0%, #12463f 30%, #0a352f 58%, #082622 100%);
+    }
+    .panel-moon {
+      position:absolute; top:6%; left:50%; transform:translateX(-50%);
+      width:190px; height:190px; border-radius:50%; z-index:0; pointer-events:none;
+      background:radial-gradient(circle at 38% 32%, #fff3d6 0%, #f9d385 40%, #f7c469 70%, #f5b544 100%);
+      box-shadow:0 0 90px 34px rgba(247,196,105,.45), 0 0 220px 110px rgba(247,196,105,.22);
+    }
+    .panel-glow-dark {
+      position:absolute; bottom:2%; left:50%; transform:translateX(-50%);
+      width:260px; height:260px; border-radius:50%; z-index:0; pointer-events:none;
+      background:radial-gradient(circle at 45% 40%, rgba(3,10,9,.85) 0%, rgba(3,10,9,.5) 45%, rgba(3,10,9,0) 75%);
+    }
+    .auth-card {
+      position:relative; z-index:1;
+      width:100%; max-width:380px; padding:32px 28px 28px; border-radius:20px;
+      background:linear-gradient(165deg, rgba(32,80,73,.55), rgba(10,34,31,.6));
+      border:1px solid rgba(255,255,255,.14);
+      box-shadow:0 30px 70px rgba(1,8,7,.5), inset 0 1px 0 rgba(255,255,255,.08);
+      backdrop-filter:blur(22px) saturate(150%); -webkit-backdrop-filter:blur(22px) saturate(150%);
+      animation:cardIn .5s cubic-bezier(.2,.8,.2,1) both;
+    }
+    @keyframes cardIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+
+    .staff-badge {
+      display:inline-flex; align-items:center; gap:6px; background:rgba(255,255,255,.09); color:var(--mint);
+      border:1px solid rgba(255,255,255,.16);
+      border-radius:20px; padding:6px 12px; font-size:11px; font-weight:800; letter-spacing:.2px;
+    }
+    .staff-badge svg { width:13px; height:13px; }
+
+    .card-brand { display:flex; align-items:center; gap:10px; margin-bottom:22px; }
+    .card-brand .brand-mark { width:32px; height:32px; font-size:17px; flex:none; }
+    .card-brand .brand-name { font-size:17px; color:var(--frost); }
+    .card-brand .brand-sub { color:#8fbdb4; }
+
+    .auth-card h2 { margin:18px 0 4px; font-size:24px; letter-spacing:-.7px; color:var(--frost); }
+    .auth-card > p.lede { margin:0 0 26px; color:#b9d6cd; font-size:13px; line-height:1.55; }
+
+    .field { margin-bottom:16px; }
+    .field label { display:block; font-size:11.5px; font-weight:750; color:#cfe9e0; margin-bottom:6px; }
+    .field .control { position:relative; }
+    .field input {
+      width:100%; height:44px; border:1px solid rgba(255,255,255,.16); border-radius:10px; padding:0 13px;
+      color:var(--frost); background:rgba(255,255,255,.06); outline:0; transition:.15s;
+    }
+    .field input::placeholder { color:rgba(234,246,241,.38); }
+    .field input:focus { border-color:rgba(191,235,216,.55); box-shadow:0 0 0 3px rgba(191,235,216,.14); background:rgba(255,255,255,.09); }
+    .field input:focus-visible { border-color:rgba(191,235,216,.55); box-shadow:0 0 0 3px rgba(191,235,216,.14); }
+
+    .toggle-pass {
+      position:absolute; right:6px; top:50%; transform:translateY(-50%);
+      width:32px; height:32px; border:0; background:transparent; border-radius:7px;
+      color:#9fc4ba; display:grid; place-items:center; transition:.15s;
+    }
+    .toggle-pass:hover { background:rgba(255,255,255,.08); color:var(--mint); }
+    .toggle-pass svg { width:17px; height:17px; }
+
+    .row-between { display:flex; align-items:center; justify-content:space-between; margin:2px 0 22px; }
+    .remember { display:flex; align-items:center; gap:7px; font-size:12px; color:#cfe9e0; font-weight:600; }
+    .remember input { width:15px; height:15px; accent-color:var(--teal-2); }
+    .link-btn { border:0; background:transparent; color:#8fe0c9; font-size:12px; font-weight:750; padding:0; }
+    .link-btn:hover { text-decoration:underline; }
+    .hint-text { font-size:11px; color:#a9cec3; margin-top:-14px; margin-bottom:18px; line-height:1.5; display:none; }
+    .hint-text.show { display:block; }
+
+    .btn-signin {
+      width:100%; height:46px; border:0; border-radius:10px; color:#fff;
+      background:linear-gradient(135deg, #0d6a63, #0b5d58 60%, #094e4a);
+      font-weight:800; font-size:13.5px; display:flex; align-items:center; justify-content:center; gap:9px;
+      transition:.2s cubic-bezier(.16,1,.3,1); box-shadow:0 10px 26px rgba(5,30,27,.5), 0 0 0 1px rgba(255,255,255,.06) inset;
+    }
+    .btn-signin:hover { filter:brightness(1.08); transform:translateY(-1px); box-shadow:0 14px 30px rgba(5,30,27,.6), 0 0 0 1px rgba(255,255,255,.08) inset; }
+    .btn-signin:active { transform:translateY(0); }
+    .btn-signin:disabled { opacity:.7; cursor:default; transform:none; }
+    .btn-signin svg { width:15px; height:15px; transition:transform .2s; }
+    .btn-signin:hover svg { transform:translateX(2px); }
+    .spinner {
+      width:15px; height:15px; border-radius:50%; border:2px solid rgba(255,255,255,.35);
+      border-top-color:#fff; animation:spin .7s linear infinite; display:none;
+    }
+    .btn-signin.loading .spinner { display:inline-block; }
+    .btn-signin.loading .btn-label, .btn-signin.loading svg.arrow { display:none; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+
+    .form-error {
+      display:none; align-items:flex-start; gap:8px; background:rgba(220,95,87,.14); border:1px solid rgba(220,95,87,.4);
+      color:#ffbcb6; border-radius:10px; padding:11px 13px; font-size:12px; font-weight:600;
+      line-height:1.5; margin-bottom:16px;
+    }
+    .form-error.show { display:flex; }
+    .form-error svg { width:15px; height:15px; flex:none; margin-top:1px; }
+
+    .divider { display:flex; align-items:center; gap:10px; margin:26px 0 18px; color:#93b6ab; font-size:11px; }
+    .divider:before, .divider:after { content:""; flex:1; height:1px; background:rgba(255,255,255,.14); }
+
+    .footnote { font-size:11.5px; color:#a9cec3; text-align:center; line-height:1.6; }
+    .footnote b { color:var(--frost); }
+
+    .legal { margin-top:28px; font-size:10.5px; color:rgba(234,246,241,.35); text-align:center; line-height:1.6; }
+
+    /* ===================== RESPONSIVE ===================== */
+    @media (max-width: 480px) {
+      .auth-panel { padding:24px 18px 40px; }
+      .panel-moon { width:150px; height:150px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .auth-card { animation:none; }
+      .spinner { animation:none; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="shell">
+
+    <!-- ===================== FORM ===================== -->
+    <main class="auth-panel">
+      <div class="panel-moon" aria-hidden="true"></div>
+      <div class="panel-glow-dark" aria-hidden="true"></div>
+      <div class="auth-card">
+        <div class="card-brand">
+          <div class="brand-mark">↗</div>
+          <div>
+            <div class="brand-name">menged</div>
+            <div class="brand-sub">Fleet Operations</div>
+          </div>
+        </div>
+        <span class="staff-badge">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 4 5v6c0 5 3.4 8.6 8 11 4.6-2.4 8-6 8-11V5z"/></svg>
+          Only for staff
+        </span>
+        <h2>Welcome back</h2>
+        <p class="lede">Sign in with the email and password your fleet admin gave you.</p>
+
+        <div class="form-error" id="formError" role="alert">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v5M12 16h.01"/></svg>
+          <span id="formErrorText">Invalid email or password.</span>
+        </div>
+
+        <form id="loginForm" novalidate>
+          <div class="field">
+            <label for="email">Work email</label>
+            <div class="control">
+              <input id="email" name="email" type="email" placeholder="you@menged.et" autocomplete="username" required>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="password">Password</label>
+            <div class="control">
+              <input id="password" name="password" type="password" placeholder="Enter your password" autocomplete="current-password" required>
+              <button type="button" class="toggle-pass" id="togglePass" aria-label="Show password">
+                <svg id="eyeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="row-between">
+            <label class="remember">
+              <input type="checkbox" id="remember">
+              Remember me
+            </label>
+            <button type="button" class="link-btn" id="forgotBtn">Forgot password?</button>
+          </div>
+          <p class="hint-text" id="forgotHint">Menged doesn't reset passwords automatically &mdash; ask your fleet admin to set a new one from the User accounts page.</p>
+
+          <button type="submit" class="btn-signin" id="signInBtn">
+            <span class="spinner"></span>
+            <span class="btn-label">Sign in</span>
+            <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </button>
+        </form>
+
+        <div class="divider">new here</div>
+        <p class="footnote">Don't have a login? <b>Ask your fleet admin</b> to add you from User accounts.</p>
+
+        <p class="legal">© Menged Fleet Operations, Addis Ababa. Internal tool &mdash; authorized staff only.</p>
+      </div>
+    </main>
+
+  </div>
+
+
+  <script>
+    (function () {
+      var API_BASE = (function () {
+        var host = window.location.hostname;
+        var isLocal = host === 'localhost' || host === '127.0.0.1' || window.location.protocol === 'file:';
+        return isLocal ? 'http://localhost:4000/api' : 'https://menged.onrender.com/api';
+      })();
+
+      // Already signed in? Skip straight to the dashboard.
+      var existingToken = localStorage.getItem('mengedToken') || sessionStorage.getItem('mengedToken');
+      if (existingToken) {
+        window.location.href = 'Menged-Fleet-Dashboard.html';
+        return;
+      }
+
+      var form = document.getElementById('loginForm');
+      var emailInput = document.getElementById('email');
+      var passwordInput = document.getElementById('password');
+      var rememberInput = document.getElementById('remember');
+      var signInBtn = document.getElementById('signInBtn');
+      var errorBox = document.getElementById('formError');
+      var errorText = document.getElementById('formErrorText');
+      var togglePass = document.getElementById('togglePass');
+      var eyeIcon = document.getElementById('eyeIcon');
+      var forgotBtn = document.getElementById('forgotBtn');
+      var forgotHint = document.getElementById('forgotHint');
+
+      togglePass.addEventListener('click', function () {
+        var showing = passwordInput.type === 'text';
+        passwordInput.type = showing ? 'password' : 'text';
+        togglePass.setAttribute('aria-label', showing ? 'Show password' : 'Hide password');
+        eyeIcon.innerHTML = showing
+          ? '<path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/>'
+          : '<path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-7 0-11-7-11-7a21.4 21.4 0 0 1 5.06-6.06M9.9 4.24A10.94 10.94 0 0 1 12 4c7 0 11 7 11 7a21.4 21.4 0 0 1-2.87 3.94M14.12 14.12a3 3 0 1 1-4.24-4.24M1 1l22 22"/>';
+      });
+
+      forgotBtn.addEventListener('click', function () {
+        forgotHint.classList.toggle('show');
+      });
+
+      function showError(message) {
+        errorText.textContent = message;
+        errorBox.classList.add('show');
+      }
+      function hideError() {
+        errorBox.classList.remove('show');
+      }
+      function setLoading(loading) {
+        signInBtn.disabled = loading;
+        signInBtn.classList.toggle('loading', loading);
+      }
+
+      form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        hideError();
+
+        var email = emailInput.value.trim();
+        var password = passwordInput.value;
+        if (!email || !password) {
+          showError('Enter your email and password to continue.');
+          return;
+        }
+
+        setLoading(true);
+        fetch(API_BASE + '/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: email, password: password })
+        })
+          .then(function (res) {
+            return res.json().catch(function () { return null; }).then(function (data) {
+              if (!res.ok) {
+                throw new Error((data && data.error) || 'Invalid email or password.');
+              }
+              return data;
+            });
+          })
+          .then(function (data) {
+            var store = rememberInput.checked ? localStorage : sessionStorage;
+            store.setItem('mengedToken', data.token);
+            store.setItem('mengedUser', JSON.stringify(data.user));
+            window.location.href = 'Menged-Fleet-Dashboard.html';
+          })
+          .catch(function (err) {
+            setLoading(false);
+            showError(err && err.message ? err.message : "Can't reach the Menged server right now. Check your connection and try again.");
+          });
+      });
+    })();
+  </script>
+</body>
+</html>

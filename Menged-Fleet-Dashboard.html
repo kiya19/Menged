@@ -1,0 +1,2329 @@
+<!doctype html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b5d58">
+  <title>Menged | Fleet Operations</title>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <style>
+    :root { --ink:#16231f; --muted:#74817d; --line:#e6ece9; --canvas:#f7f9f8; --white:#fff; --teal:#0b5d58; --teal-2:#087c73; --mint:#dff4ed; --gold:#f5b544; --red:#dc5f57; --slate:#334b46; --shadow:0 14px 40px rgba(25,57,49,.08); }
+    * { box-sizing:border-box; }
+    html { scroll-behavior:smooth; }
+    body { margin:0; color:var(--ink); background:var(--canvas); font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; font-size:14px; }
+    button,input,select { font:inherit; }
+    button { cursor:pointer; }
+    .app { min-height:100vh; display:flex; }
+    .sidebar { width:252px; padding:25px 15px; background:#0a3735; color:#d6e7e4; display:flex; flex-direction:column; position:fixed; inset:0 auto 0 0; z-index:10; overflow-y:auto; overscroll-behavior:contain; scrollbar-width:thin; scrollbar-color:#4e817c transparent; }
+    .brand { padding:0 13px 29px; display:flex; align-items:center; gap:11px; color:#fff; font-weight:800; font-size:22px; letter-spacing:-.7px; }
+    .brand-mark { width:33px; height:33px; border-radius:11px; display:grid; place-items:center; background:#bcebdc; color:#07564f; font-size:20px; transform:rotate(-5deg); }
+    .workspace-label { font-size:10px; color:#8db4ad; text-transform:uppercase; letter-spacing:1.1px; font-weight:800; padding:0 13px 9px; }
+    .nav { display:grid; gap:4px; }
+    .nav a { color:#b5d2cd; text-decoration:none; padding:11px 13px; border-radius:10px; display:flex; align-items:center; gap:12px; font-weight:600; transition:.2s; }
+    .nav a:hover,.nav a.active { background:#14615b; color:#fff; }
+    .nav-icon { width:19px; text-align:center; font-size:16px; }
+    .nav-badge { margin-left:auto; border-radius:10px; background:#e5a935; color:#432e00; padding:2px 7px; font-size:11px; font-weight:800; }
+    .side-foot { margin-top:auto; background:#104744; padding:14px; border-radius:13px; }
+    .side-foot strong { display:block; color:#fff; font-size:13px; margin-bottom:4px; }
+    .side-foot span { color:#add0ca; font-size:11px; line-height:1.5; display:block; }
+    .side-foot-actions { display:grid; gap:6px; margin-top:11px; }
+    .side-foot button { width:100%; background:transparent; color:#d5efeb; border:1px solid #5c9690; border-radius:7px; padding:7px 9px; font-size:11px; font-weight:700; transition:.2s; }
+    .side-foot button:hover { background:rgba(255,255,255,.1); color:#fff; border-color:#82beb7; }
+    main { margin-left:252px; width:calc(100% - 252px); min-width:0; }
+    .topbar { height:78px; display:flex; align-items:center; padding:0 37px; background:rgba(255,255,255,.92); border-bottom:1px solid var(--line); gap:18px; position:sticky; top:0; z-index:5; -webkit-backdrop-filter:blur(16px); backdrop-filter:blur(16px); }
+    .crumb { color:var(--muted); font-size:12px; flex:1; }
+    .crumb b { color:var(--ink); }
+    .help { color:var(--muted); border:0; background:transparent; font-size:13px; padding:6px 10px; border-radius:6px; transition:.2s; }
+    .help:hover { background:#eff4f2; color:var(--teal); }
+    .btn-signout { height:36px; border-radius:9px; border:1px solid #e1e9e5; background:#fff; color:#4a5f5a; padding:0 13px; display:inline-flex; align-items:center; gap:8px; font-weight:750; font-size:12px; cursor:pointer; box-shadow:0 1px 3px rgba(0,0,0,.04); transition:all .2s cubic-bezier(0.16,1,0.3,1); }
+    .btn-signout svg { width:15px; height:15px; stroke:currentColor; transition:transform .2s ease; }
+    .btn-signout:hover { background:#fff5f5; color:#dc2626; border-color:#fecaca; box-shadow:0 4px 14px rgba(220,38,38,.12); transform:translateY(-1px); }
+    .btn-signout:hover svg { transform:translateX(2px); }
+    .btn-signout:active { transform:translateY(1px); }
+    .notice { width:37px; height:37px; background:#f2f6f4; border:0; border-radius:10px; position:relative; color:var(--slate); font-size:17px; transition:.2s; }
+    .notice:hover { background:#e2ede9; color:var(--teal); }
+    .notice:after { content:""; position:absolute; width:7px; height:7px; background:var(--gold); border:2px solid #f2f6f4; border-radius:50%; right:8px; top:7px; }
+    .user { display:flex; align-items:center; gap:9px; padding:4px 8px; border-radius:8px; transition:.2s; }
+    .user:hover { background:#eff4f2; }
+    .avatar { width:34px; height:34px; background:#c6e7dc; color:#086257; border-radius:50%; display:grid; place-items:center; font-size:12px; font-weight:800; }
+    .user-name { font-weight:750; font-size:12px; }
+    .user-role { color:var(--muted); font-size:10px; margin-top:2px; }
+    .page { padding:31px 37px 42px; max-width:1550px; margin:auto; }
+    .view { display:none; }
+    .view.active { display:block; animation:fade-in .18s ease-out; }
+    .view.active.module-grid { display:grid; }
+    @keyframes fade-in { from { opacity:.25; transform:translateY(4px); } to { opacity:1; transform:translateY(0); } }
+    .heading-row { display:flex; align-items:flex-start; justify-content:space-between; gap:20px; margin-bottom:25px; }
+    h1 { margin:0; letter-spacing:-1.1px; font-size:27px; line-height:1.2; }
+    .subhead { margin:6px 0 0; color:var(--muted); font-size:13px; }
+    .header-actions { display:flex; gap:10px; }
+    .btn { height:39px; border-radius:9px; border:1px solid var(--line); background:#fff; color:var(--slate); padding:0 13px; display:inline-flex; align-items:center; justify-content:center; gap:8px; font-weight:750; font-size:12px; white-space:nowrap; transition:.2s; }
+    .btn:hover { transform:translateY(-1px); box-shadow:0 5px 14px rgba(24,54,48,.08); }
+    .btn-primary { background:var(--teal); color:#fff; border-color:var(--teal); }
+    .btn-primary:hover { background:#074f4b; }
+    .btn-icon { font-size:17px; line-height:1; }
+    .stats { display:grid; grid-template-columns:repeat(4,1fr); gap:15px; margin-bottom:24px; }
+    .stat { background:#fff; border:1px solid var(--line); border-radius:13px; padding:17px 18px; min-height:120px; box-shadow:0 2px 5px rgba(25,57,49,.015); }
+    .stat-top { display:flex; justify-content:space-between; align-items:center; color:var(--muted); font-size:12px; font-weight:650; }
+    .stat-mark { width:29px; height:29px; border-radius:8px; background:#eff7f4; color:var(--teal); display:grid; place-items:center; font-size:15px; }
+    .stat:nth-child(2) .stat-mark { background:#eef7fc; color:#1975a3; }
+    .stat:nth-child(3) .stat-mark { background:#fff7e6; color:#bd7b00; }
+    .stat:nth-child(4) .stat-mark { background:#fff0ef; color:#bf4d46; }
+    .stat-value { font-size:27px; letter-spacing:-1px; font-weight:800; margin-top:14px; }
+    .stat-detail { font-size:11px; color:var(--muted); margin-top:3px; }
+    .stat-detail .up { color:#168269; font-weight:800; }
+    .overview-grid { display:grid; grid-template-columns:minmax(0,1.48fr) minmax(295px,.72fr); gap:18px; margin-bottom:24px; }
+    .panel { border:1px solid var(--line); background:#fff; border-radius:13px; box-shadow:0 2px 5px rgba(25,57,49,.015); }
+    .panel-head { display:flex; padding:17px 19px 14px; align-items:flex-start; justify-content:space-between; }
+    .panel-title { font-weight:800; letter-spacing:-.25px; font-size:14px; }
+    .panel-note { color:var(--muted); font-size:11px; margin-top:3px; }
+    .link-button { color:var(--teal); font-size:11px; font-weight:800; border:0; background:transparent; padding:2px; cursor:pointer; }
+    .link-button:hover { text-decoration:underline; }
+    .chart { padding:0 18px 14px; height:205px; display:flex; align-items:flex-end; gap:11px; border-bottom:1px solid #eff3f1; }
+    .bar-wrap { height:100%; flex:1; display:flex; flex-direction:column; justify-content:flex-end; align-items:center; gap:7px; }
+    .bar { width:100%; max-width:31px; border-radius:6px 6px 3px 3px; background:#beded6; position:relative; min-height:10px; transition:height .3s ease; }
+    .bar.active { background:var(--teal); }
+    .bar-label { height:13px; color:#94a19d; font-size:10px; }
+    .chart-legend { padding:11px 18px; display:flex; gap:15px; color:var(--muted); font-size:10px; }
+    .legend-dot { width:7px; height:7px; display:inline-block; border-radius:50%; margin-right:5px; background:var(--teal); }
+    .legend-dot.soft { background:#beded6; }
+    .queue { padding:0 17px 12px; }
+    .queue-row { border-top:1px solid #eff3f1; padding:12px 1px; display:flex; align-items:center; gap:10px; transition:.15s; }
+    .queue-row:hover { background:#f9fbfb; border-radius:8px; }
+    .queue-symbol { width:30px; height:30px; background:#fff4df; color:#bd7b00; border-radius:9px; display:grid; place-items:center; font-size:14px; }
+    .queue-row:nth-child(2) .queue-symbol { background:#eef6f4; color:#08786e; }
+    .queue-row:nth-child(3) .queue-symbol { background:#fff0ef; color:#c14f47; }
+    .queue-content { flex:1; min-width:0; }
+    .queue-content b { display:block; font-size:11px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .queue-content span { display:block; color:var(--muted); font-size:10px; margin-top:3px; }
+    .queue-time { color:var(--muted); font-size:10px; white-space:nowrap; }
+    .fleet-panel { overflow:hidden; }
+    .fleet-toolbar { border-top:1px solid var(--line); padding:12px 18px; display:flex; align-items:center; gap:9px; flex-wrap:wrap; }
+    .tabs { display:flex; border:1px solid var(--line); border-radius:8px; padding:3px; gap:2px; }
+    .tab { border:0; background:transparent; height:27px; padding:0 10px; border-radius:5px; color:var(--muted); font-size:11px; font-weight:700; cursor:pointer; }
+    .tab.active { background:#e7f4ef; color:#087064; }
+    .search { margin-left:auto; height:33px; min-width:210px; border:1px solid var(--line); border-radius:8px; padding:0 10px; color:var(--ink); outline:0; background:#fff; font-size:11px; }
+    .search:focus { border-color:#78aaa1; box-shadow:0 0 0 3px #e2f4ef; }
+    .filter { height:33px; border:1px solid var(--line); background:#fff; border-radius:8px; color:var(--slate); padding:0 9px; font-size:11px; }
+    .table-wrap { overflow:auto; }
+    table { border-collapse:collapse; width:100%; min-width:900px; text-align:left; }
+    th { background:#fbfcfc; padding:11px 18px; color:#81908b; border-top:1px solid var(--line); border-bottom:1px solid var(--line); font-size:10px; font-weight:800; letter-spacing:.25px; text-transform:uppercase; white-space:nowrap; }
+    td { padding:13px 18px; border-bottom:1px solid #eff3f1; font-size:12px; vertical-align:middle; }
+    tr:last-child td { border-bottom:0; }
+    tr.editable-row:hover { background:#f6fbf9; cursor:pointer; }
+    .bus-cell { display:flex; align-items:center; gap:10px; }
+    .vehicle-icon { width:30px; height:30px; background:#eaf5f1; color:#08786e; border-radius:8px; display:grid; place-items:center; font-size:15px; }
+    .bus-name { font-weight:800; display:block; }
+    .bus-sub { color:var(--muted); font-size:10px; margin-top:3px; display:block; }
+    .person { display:flex; align-items:center; gap:7px; white-space:nowrap; }
+    .mini-avatar { width:23px; height:23px; display:grid; place-items:center; border-radius:50%; background:#eff3f1; color:#4f645f; font-size:9px; font-weight:800; }
+    .pos { background:#f4f6fa; color:#526479; padding:4px 7px; border-radius:5px; font-size:10px; font-weight:800; }
+    .status { display:inline-flex; align-items:center; gap:5px; border-radius:20px; padding:4px 8px; font-size:10px; font-weight:800; white-space:nowrap; }
+    .status:before { content:""; width:5px; height:5px; border-radius:50%; background:currentColor; }
+    .active-status { color:#087d6a; background:#e5f5ef; }
+    .idle-status { color:#ae7509; background:#fff4dd; }
+    .unassigned-status { color:#bd504a; background:#fff0ef; }
+    .action { border:0; background:transparent; color:var(--teal); font-size:11px; font-weight:800; padding:4px 6px; cursor:pointer; border-radius:4px; }
+    .editable-cell { display:inline-flex; align-items:center; gap:7px; border-radius:8px; padding:5px 7px; margin:-5px -7px; cursor:text; transition:.15s; }
+    .editable-cell:hover, .editable-cell.editing { background:#eef6f3; }
+    .editable-cell .edit-hint { opacity:0; margin-left:7px; color:#8fa8a2; font-size:11px; transition:.15s; }
+    .editable-cell:hover .edit-hint { opacity:1; }
+    .editable-cell.editing .edit-hint { display:none; }
+    .cell-display { display:inline-flex; align-items:center; gap:7px; }
+    .cell-placeholder { color:#a0aaa7; font-style:italic; }
+    .cell-input { border:0; border-bottom:1.5px solid var(--teal-2); background:transparent; outline:0; padding:3px 1px; font-size:12px; font-weight:700; color:var(--ink); min-width:118px; font-family:inherit; }
+    .status-select { appearance:none; -webkit-appearance:none; -moz-appearance:none; border:0; border-radius:20px; padding:5px 22px 5px 10px; font-size:10px; font-weight:800; cursor:pointer; outline:0; background-repeat:no-repeat; background-position:right 8px center; background-size:8px 6px; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='6'%3E%3Cpath d='M0 0l4 6 4-6z' fill='%2374817d'/%3E%3C/svg%3E"); transition:.15s; }
+    .status-select:hover { filter:brightness(.97); }
+    .status-select:focus { box-shadow:0 0 0 3px rgba(11,93,88,.14); }
+    .status-select.active-status { color:#087d6a; background-color:#e5f5ef; }
+    .status-select.idle-status { color:#ae7509; background-color:#fff4dd; }
+    .status-select.unassigned-status { color:#bd504a; background-color:#fff0ef; }
+    .task-metrics-row { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; padding:0 18px 18px; }
+    .priority-pill { display:inline-flex; align-items:center; gap:4px; border-radius:6px; padding:3px 7px; font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.3px; }
+    .priority-urgent { background:#fef2f2; color:#b91c1c; border:1px solid #fecaca; }
+    .priority-high { background:#fff7ed; color:#c2410c; border:1px solid #fed7aa; }
+    .priority-normal { background:#f0fdf4; color:#15803d; border:1px solid #bbf7d0; }
+    .task-status-select { appearance:none; -webkit-appearance:none; border:0; border-radius:20px; padding:5px 22px 5px 10px; font-size:10px; font-weight:800; cursor:pointer; outline:0; background-repeat:no-repeat; background-position:right 8px center; background-size:8px 6px; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='6'%3E%3Cpath d='M0 0l4 6 4-6z' fill='%2374817d'/%3E%3C/svg%3E"); transition:.15s; }
+    .task-status-select.status-pending { background-color:#fff4dd; color:#ae7509; }
+    .task-status-select.status-progress { background-color:#e0f2fe; color:#0369a1; }
+    .task-status-select.status-completed { background-color:#e5f5ef; color:#087d6a; }
+    .ticket-badge { font-family:monospace; font-weight:800; font-size:11px; background:#eff4f2; color:#08665f; padding:3px 6px; border-radius:5px; }
+    .tech-tag { display:inline-flex; align-items:center; gap:6px; font-size:11.5px; font-weight:700; color:var(--ink); }
+    .action:hover { background:#e7f5f0; text-decoration:none; }
+    .empty { padding:42px; text-align:center; color:var(--muted); font-size:12px; }
+    .module-section { scroll-margin-top:96px; margin-top:24px; }
+    .module-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px; }
+    .directory-list { padding:0 18px 8px; }
+    .directory-row { display:flex; align-items:center; gap:10px; padding:11px 0; border-top:1px solid #eff3f1; }
+    .directory-row:first-child { border-top:0; }
+    .directory-name { flex:1; min-width:0; }
+    .directory-name b { display:block; font-size:12px; }
+    .directory-name span { display:block; color:var(--muted); font-size:10px; margin-top:2px; }
+    .directory-count { color:var(--teal); background:#e7f5f0; border-radius:20px; padding:4px 7px; font-size:10px; font-weight:800; white-space:nowrap; }
+    .assignment-summary { padding:0 18px 18px; display:grid; gap:10px; }
+    .assignment-card { border:1px solid var(--line); border-radius:10px; padding:12px; display:flex; align-items:center; gap:10px; }
+    .assignment-card b { font-size:12px; display:block; }
+    .assignment-card span { color:var(--muted); font-size:10px; display:block; margin-top:3px; }
+    .assignment-card .btn { margin-left:auto; height:31px; }
+    .report-cards { padding:0 18px 18px; display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+    .report-card { border-radius:9px; padding:13px; background:#f5f9f7; }
+    .report-card span { color:var(--muted); font-size:10px; display:block; }
+    .report-card b { margin-top:7px; display:block; font-size:19px; letter-spacing:-.5px; }
+    .settings-list { padding:0 18px 18px; }
+    .setting-row { min-height:54px; display:flex; align-items:center; gap:12px; border-top:1px solid #eff3f1; }
+    .setting-row:first-child { border-top:0; }
+    .setting-row > div { flex:1; }
+    .setting-row b { display:block; font-size:12px; }
+    .setting-row span { color:var(--muted); display:block; font-size:10px; margin-top:3px; }
+    .switch { width:37px; height:21px; appearance:none; border:0; border-radius:20px; background:#cad6d2; padding:2px; transition:.2s; cursor:pointer; }
+    .switch:after { content:""; display:block; width:17px; height:17px; border-radius:50%; background:#fff; box-shadow:0 1px 2px rgba(0,0,0,.22); transition:.2s; }
+    .switch:checked { background:var(--teal); }
+    .switch:checked:after { transform:translateX(16px); }
+    .finance-grid { display:grid; grid-template-columns:minmax(0,1.25fr) minmax(290px,.75fr); gap:18px; }
+    .finance-metrics { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; padding:0 18px 18px; }
+    .finance-metric { border-radius:9px; background:#f3f8f6; padding:13px; }
+    .finance-metric span { color:var(--muted); font-size:10px; display:block; }
+    .finance-metric b { margin-top:7px; display:block; font-size:19px; letter-spacing:-.5px; }
+    .auditor-empty { color:var(--muted); font-size:11px; padding:15px 0; }
+    .section-divider { height:1px; background:var(--line); margin:2px 18px 0; }
+    .subsection-head { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:16px 18px 10px; }
+    .subsection-head b { font-size:12px; }
+    .subsection-head span { display:block; color:var(--muted); font-size:10px; margin-top:3px; }
+    .audit-status { font-size:10px; font-weight:800; border-radius:20px; padding:4px 7px; white-space:nowrap; }
+    .audit-active { background:#e5f5ef; color:#087d6a; }
+    .audit-corrupt { background:#fff0ef; color:#bd504a; }
+    .materials-table td,.materials-table th { padding-top:10px; padding-bottom:10px; }
+    .app-footer { margin-top:30px; padding:18px 22px; border:1px solid var(--line); background:#fff; border-radius:13px; display:flex; align-items:center; justify-content:center; gap:18px; color:var(--muted); font-size:12px; }
+    .app-footer strong { color:var(--teal); letter-spacing:.1px; }
+    .footer-logo-wrap { border-left:1px solid var(--line); padding-left:18px; display:flex; align-items:center; }
+    .footer-logo { width:165px; height:auto; display:block; border-radius:5px; }
+    .modal-backdrop { position:fixed; inset:0; z-index:30; display:none; align-items:center; justify-content:center; background:rgba(11,32,29,.43); padding:20px; }
+    .modal-backdrop.open { display:flex; }
+    .modal { width:min(620px,100%); max-height:calc(100vh - 40px); overflow:auto; border-radius:15px; background:#fff; box-shadow:0 24px 75px rgba(0,0,0,.2); }
+    .modal.wide { width:min(900px,100%); }
+    .modal-head { padding:19px 21px 15px; display:flex; align-items:flex-start; justify-content:space-between; border-bottom:1px solid var(--line); }
+    .modal-head h2 { font-size:17px; letter-spacing:-.5px; margin:0; }
+    .modal-head p { color:var(--muted); font-size:11px; margin:4px 0 0; }
+    .close { width:29px; height:29px; border:0; background:#f2f5f4; color:#576864; border-radius:8px; font-size:18px; line-height:1; cursor:pointer; }
+    .modal-body { padding:20px 21px; }
+    .field-grid { display:grid; grid-template-columns:1fr 1fr; gap:15px; }
+    label { display:block; font-size:11px; color:#52635e; font-weight:750; margin-bottom:6px; }
+    .input { width:100%; height:38px; border:1px solid #dce5e1; border-radius:8px; padding:0 10px; outline:0; color:var(--ink); background:#fff; font-size:12px; }
+    .input:focus { border-color:#5ba79a; box-shadow:0 0 0 3px #e2f4ef; }
+    .modal-foot { padding:14px 21px 18px; display:flex; justify-content:flex-end; gap:9px; border-top:1px solid var(--line); }
+    .context-bus { padding:12px; background:#eef7f4; color:#23645c; border-radius:9px; font-size:12px; margin-bottom:17px; }
+    .context-bus b { color:#075b52; }
+    .dropzone { border:1.5px dashed #a8c9c1; background:#f8fcfb; border-radius:12px; padding:29px 20px; text-align:center; transition:.2s; }
+    .dropzone.drag { background:#e7f6f1; border-color:var(--teal); }
+    .upload-orb { background:#dbf1eb; color:#087568; width:42px; height:42px; border-radius:13px; display:grid; place-items:center; margin:0 auto 10px; font-size:21px; }
+    .dropzone b { display:block; font-size:13px; }
+    .dropzone span { color:var(--muted); font-size:11px; display:block; margin:4px 0 12px; }
+    .file-note { font-size:10px; color:#81908b; margin-top:10px; }
+    .import-workflow { display:none; }
+    .import-workflow.ready { display:block; }
+    .import-meta { display:flex; align-items:center; gap:10px; margin-bottom:16px; padding:10px 12px; border:1px solid var(--line); border-radius:9px; }
+    .file-chip { width:32px; height:32px; border-radius:8px; background:#eaf5f1; color:#08786e; display:grid; place-items:center; font-weight:900; font-size:10px; }
+    .import-meta b { display:block; font-size:11px; }
+    .import-meta span { display:block; color:var(--muted); font-size:10px; margin-top:2px; }
+    .mapping { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; padding:13px; border:1px solid var(--line); border-radius:10px; margin-bottom:15px; }
+    .mapping label { margin:0 0 4px; font-size:10px; }
+    .mapping select { height:32px; width:100%; border:1px solid #dce5e1; border-radius:6px; padding:0 7px; font-size:10px; background:#fff; color:var(--ink); }
+    .validation { padding:10px 12px; border-radius:8px; font-size:11px; margin-bottom:14px; }
+    .validation.good { background:#e7f7f0; color:#087260; }
+    .validation.bad { background:#fff0ef; color:#b5423c; }
+    .preview-wrap { border:1px solid var(--line); border-radius:9px; overflow:auto; max-height:210px; }
+    .preview-wrap table { min-width:620px; }
+    .preview-wrap th,.preview-wrap td { padding:8px 10px; font-size:10px; }
+    .toast { position:fixed; z-index:60; right:24px; bottom:24px; background:#123c38; color:#fff; padding:12px 16px; border-radius:10px; box-shadow:0 12px 32px rgba(0,0,0,.18); font-size:12px; font-weight:650; opacity:0; transform:translateY(12px); pointer-events:none; transition:.25s; }
+    .toast.show { opacity:1; transform:translateY(0); }
+    @media (max-width:1050px) { .stats { grid-template-columns:repeat(2,1fr); } .overview-grid { grid-template-columns:1fr; } }
+    @media (max-width:760px) { .sidebar { width:64px; padding:18px 7px; } .brand { padding:0 8px 28px; } .brand span,.workspace-label,.nav a span:not(.nav-icon),.nav-badge,.side-foot { display:none; } .nav a { justify-content:center; padding:12px; } main { margin-left:64px; width:calc(100% - 64px); } .topbar { height:63px; padding:0 18px; } .crumb,.help,.user > div { display:none; } .page { padding:23px 18px; } .heading-row { display:block; } .header-actions { margin-top:15px; } .stats { grid-template-columns:1fr 1fr; gap:10px; } .stat { padding:13px; min-height:105px; } .stat-value { font-size:23px; } .fleet-toolbar { align-items:stretch; } .search { min-width:100%; margin-left:0; order:3; } .field-grid,.mapping { grid-template-columns:1fr; } .module-grid { grid-template-columns:1fr; } .report-cards,.finance-metrics { grid-template-columns:1fr; } .finance-grid { grid-template-columns:1fr; } .app-footer { flex-direction:column; gap:11px; text-align:center; } .footer-logo-wrap { border-left:0; border-top:1px solid var(--line); padding:11px 0 0; } }
+  </style>
+</head>
+<body>
+  <div id="cloudLoadingOverlay" style="position:fixed;inset:0;z-index:999;background:#f4f8f6;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;font-family:Inter,ui-sans-serif,system-ui,sans-serif;">
+    <div style="width:34px;height:34px;border-radius:50%;border:3px solid #d7e8e3;border-top-color:#0b5d58;animation:cloudspin .8s linear infinite;"></div>
+    <div style="color:#0b5d58;font-weight:800;font-size:13px;letter-spacing:.02em;" id="cloudLoadingText">Connecting to Menged Cloud…</div>
+    <style>@keyframes cloudspin{to{transform:rotate(360deg)}}</style>
+  </div>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand"><div class="brand-mark">↗</div><span>menged</span></div>
+      <div class="workspace-label">Operations</div>
+      <nav class="nav">
+        <a class="active" href="#dashboard" data-nav="dashboard"><span class="nav-icon">▦</span><span>Dashboard</span></a>
+        <a href="#issue-material" data-nav="issue-material"><span class="nav-icon">◉</span><span>Issue material</span></a>
+        <a href="#tasks" data-nav="tasks"><span class="nav-icon">⚡</span><span>Tasks</span><span class="nav-badge" id="taskPendingBadge" style="background:#08665f;color:#fff;">3</span></a>
+        <a href="#reports" data-nav="reports"><span class="nav-icon">◒</span><span>Reports</span></a>
+        <a href="#finance" data-nav="finance"><span class="nav-icon">₿</span><span>Finance Audit</span></a>
+      </nav>
+      <div class="workspace-label" style="margin-top:25px" id="manageNavLabel">Manage</div>
+      <nav class="nav"><a href="#users" data-nav="users" id="usersNavLink" style="display:none"><span class="nav-icon">◈</span><span>Users</span></a><a href="#settings" data-nav="settings"><span class="nav-icon">⚙</span><span>Settings</span></a></nav>
+      <div class="side-foot">
+        <strong>Data workspace</strong>
+        <span>Upload, save, or export your fleet records.</span>
+        <div class="side-foot-actions">
+          <button id="sideImport">Upload data</button>
+          <button id="sideSave">Save data</button>
+          <button id="sideExport">Export data</button>
+        </div>
+      </div>
+    </aside>
+    <main>
+      <header class="topbar">
+        <div class="crumb" id="topbarCrumb">Operations <span style="padding:0 7px">/</span> <b>Fleet overview</b></div>
+        <button class="help" id="openHelpModal">Help center</button>
+        <button class="notice" id="openNoticeModal" aria-label="Notifications">♢</button>
+        <button class="btn-signout" id="logoutBtn" title="Sign out of Menged">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+          <span>Sign out</span>
+        </button>
+        <div class="user" id="userChip" style="cursor: pointer;"><div class="avatar" id="userAvatar">EA</div><div><div class="user-name" id="userNameLabel">Eyob A.</div><div class="user-role" id="userRoleLabel">Fleet administrator</div></div></div>
+      </header>
+      <div class="page" id="appContent">
+        <section class="view active" id="dashboard" data-view-panel="dashboard">
+        <section class="heading-row">
+          <div><h1>Good morning, Eyob <span style="font-size:23px">✦</span></h1><p class="subhead">Here is what is happening across your fleet today.</p></div>
+          
+        </section>
+        <section class="stats">
+          <article class="stat"><div class="stat-top"><span>Total fleet</span><span class="stat-mark">▰</span></div><div class="stat-value" id="fleetCount">7</div><div class="stat-detail"><span class="up">+2</span> vehicles this month</div></article>
+          <article class="stat"><div class="stat-top"><span>Active on route</span><span class="stat-mark">↗</span></div><div class="stat-value" id="activeCount">4</div><div class="stat-detail"><span class="up">75%</span> of current fleet</div></article>
+          <article class="stat"><div class="stat-top"><span>Idle / maintenance</span><span class="stat-mark">◒</span></div><div class="stat-value" id="idleCount">1</div><div class="stat-detail">2 due for inspection</div></article>
+          <article class="stat"><div class="stat-top"><span>Needs assignment</span><span class="stat-mark">!</span></div><div class="stat-value" id="unassignedCount">2</div><div class="stat-detail">Cashier or driver missing</div></article>
+        </section>
+        <section class="overview-grid">
+          <article class="panel"><div class="panel-head"><div><div class="panel-title">Reports</div><div class="panel-note">Today's operational summary, ready for handover.</div></div><button class="link-button" id="openReportLink">View report →</button></div><div class="report-cards"><div class="report-card"><span>Assigned vehicles</span><b id="reportAssignedDash">5</b></div><div class="report-card"><span>Personnel linked</span><b id="reportPersonnelDash">12</b></div><div class="report-card"><span>Open actions</span><b id="reportActionsDash">2</b></div></div></article>
+          <article class="panel"><div class="panel-head"><div><div class="panel-title">Attention queue</div><div class="panel-note">Items that need action today</div></div><button class="link-button" id="reviewQueue">Review all</button></div><div class="queue"><div class="queue-row" style="cursor: pointer;"><div class="queue-symbol">!</div><div class="queue-content"><b>ET-3-84216 needs a cashier</b><span>Vehicle M-024 is ready to dispatch</span></div><div class="queue-time">Now</div></div><div class="queue-row" style="cursor: pointer;"><div class="queue-symbol">✓</div><div class="queue-content"><b>POS-018 is ready to assign</b><span>Unlinked POS device</span></div><div class="queue-time">2h</div></div><div class="queue-row" style="cursor: pointer;"><div class="queue-symbol">◒</div><div class="queue-content"><b>2 vehicles due for inspection</b><span>Maintenance schedule</span></div><div class="queue-time">Today</div></div></div></article>
+        </section>
+        </section>
+        <section class="panel fleet-panel view" id="fleet" data-view-panel="fleet">
+          <div class="panel-head"><div><div class="panel-title">Fleet task board</div><div class="panel-note">Manage vehicle, driver, cashier, and POS relationships in one place.</div></div><button class="link-button" id="resetData">Reset demo data</button></div>
+          <div class="fleet-toolbar"><div class="tabs"><button class="tab active" data-status="all">All vehicles</button><button class="tab" data-status="Active">Active</button><button class="tab" data-status="Idle">Idle</button><button class="tab" data-status="Unassigned">Unassigned</button></div><input class="search" id="fleetSearch" placeholder="Search plate, driver, cashier, POS, or side no."></div>
+          <div class="table-wrap"><table><thead><tr><th>Vehicle</th><th>Driver</th><th>Cashier</th><th>POS device</th><th>Status</th><th></th></tr></thead><tbody id="fleetRows"><tr><td><div class="bus-cell"><div class="vehicle-icon">▰</div><div><span class="bus-name">ET-3-84216</span><span class="bus-sub">M-024 · Minibus</span></div></div></td><td><div class="person"><span class="mini-avatar">ST</span><span>Samuel T.</span></div></td><td><span style="color:#a0aaa7">Not assigned</span></td><td><span class="pos">POS-018</span></td><td><span class="status unassigned-status">Unassigned</span></td><td><button class="action" data-edit="b1">Manage</button></td></tr><tr><td><div class="bus-cell"><div class="vehicle-icon">▰</div><div><span class="bus-name">ET-3-81604</span><span class="bus-sub">M-011 · Minibus</span></div></div></td><td><div class="person"><span class="mini-avatar">MG</span><span>Mulu G.</span></div></td><td><div class="person"><span class="mini-avatar">RM</span><span>Rahel M.</span></div></td><td><span class="pos">POS-012</span></td><td><span class="status active-status">Active</span></td><td><button class="action" data-edit="b2">Manage</button></td></tr><tr><td><div class="bus-cell"><div class="vehicle-icon">▰</div><div><span class="bus-name">ET-3-85472</span><span class="bus-sub">M-031 · City bus</span></div></div></td><td><div class="person"><span class="mini-avatar">KA</span><span>Kebede A.</span></div></td><td><div class="person"><span class="mini-avatar">TD</span><span>Tigist D.</span></div></td><td><span class="pos">POS-023</span></td><td><span class="status active-status">Active</span></td><td><button class="action" data-edit="b3">Manage</button></td></tr><tr><td><div class="bus-cell"><div class="vehicle-icon">▰</div><div><span class="bus-name">ET-3-83190</span><span class="bus-sub">M-019 · Minibus</span></div></div></td><td><div class="person"><span class="mini-avatar">HB</span><span>Henok B.</span></div></td><td><div class="person"><span class="mini-avatar">LK</span><span>Liya K.</span></div></td><td><span class="pos">POS-009</span></td><td><span class="status idle-status">Idle</span></td><td><button class="action" data-edit="b4">Manage</button></td></tr><tr><td><div class="bus-cell"><div class="vehicle-icon">▰</div><div><span class="bus-name">ET-3-87581</span><span class="bus-sub">M-044 · City bus</span></div></div></td><td><div class="person"><span class="mini-avatar">MN</span><span>Mesfin N.</span></div></td><td><div class="person"><span class="mini-avatar">SW</span><span>Sara W.</span></div></td><td><span class="pos">POS-031</span></td><td><span class="status active-status">Active</span></td><td><button class="action" data-edit="b5">Manage</button></td></tr><tr><td><div class="bus-cell"><div class="vehicle-icon">▰</div><div><span class="bus-name">ET-3-80211</span><span class="bus-sub">M-008 · Minibus</span></div></div></td><td><span style="color:#a0aaa7">Not assigned</span></td><td><div class="person"><span class="mini-avatar">MF</span><span>Marta F.</span></div></td><td><span class="pos">POS-004</span></td><td><span class="status unassigned-status">Unassigned</span></td><td><button class="action" data-edit="b6">Manage</button></td></tr><tr><td><div class="bus-cell"><div class="vehicle-icon">▰</div><div><span class="bus-name">ET-3-86733</span><span class="bus-sub">M-037 · Minibus</span></div></div></td><td><div class="person"><span class="mini-avatar">YA</span><span>Yonas A.</span></div></td><td><div class="person"><span class="mini-avatar">HE</span><span>Hana E.</span></div></td><td><span class="pos">POS-027</span></td><td><span class="status active-status">Active</span></td><td><button class="action" data-edit="b7">Manage</button></td></tr></tbody></table></div>
+        </section>
+        <section class="module-section panel view" id="cashiers" data-view-panel="cashiers"><div class="panel-head"><div><div class="panel-title">Cashiers</div><div class="panel-note">Current cashiers and linked POS devices.</div></div><button class="link-button" id="openCashierAssignments">Manage assignments →</button></div><div class="directory-list" id="cashierDirectory"><div class="directory-row"><span class="mini-avatar">RM</span><div class="directory-name"><b>Rahel M.</b><span>ET-3-81604</span></div><span class="directory-count">1 vehicle</span></div><div class="directory-row"><span class="mini-avatar">TD</span><div class="directory-name"><b>Tigist D.</b><span>ET-3-85472</span></div><span class="directory-count">1 vehicle</span></div><div class="directory-row"><span class="mini-avatar">LK</span><div class="directory-name"><b>Liya K.</b><span>ET-3-83190</span></div><span class="directory-count">1 vehicle</span></div><div class="directory-row"><span class="mini-avatar">SW</span><div class="directory-name"><b>Sara W.</b><span>ET-3-87581</span></div><span class="directory-count">1 vehicle</span></div><div class="directory-row"><span class="mini-avatar">MF</span><div class="directory-name"><b>Marta F.</b><span>ET-3-80211</span></div><span class="directory-count">1 vehicle</span></div><div class="directory-row"><span class="mini-avatar">HE</span><div class="directory-name"><b>Hana E.</b><span>ET-3-86733</span></div><span class="directory-count">1 vehicle</span></div></div></section>
+        <section class="module-section panel view" id="issue-material" data-view-panel="issue-material"><div class="panel-head"><div><div class="panel-title">Issue material</div><div class="panel-note">Record cable, charger, and other equipment issued to an IT technician and vehicle.</div></div><div style="display:flex;gap:12px;align-items:center"><button class="btn" id="exportMaterials">Export materials</button><button class="btn btn-primary" id="openMaterialModal">＋ Issue material</button></div></div><div class="table-wrap materials-table"><table><thead><tr><th>IT Technician</th><th>Plate No.</th><th>Material</th><th>Serial No.</th><th>Quantity</th><th>Issue date</th><th>Notes</th><th id="materialActionsHeader" style="display:none;text-align:right">Actions</th></tr></thead><tbody id="materialRows"><tr><td><div class="person"><span class="mini-avatar">DK</span><span>Dawit K.</span></div></td><td><span class="pos">ET-3-81604</span></td><td><span class="pos">Cable</span></td><td>1</td><td>2026-08-06</td><td>—</td></tr><tr><td><div class="person"><span class="mini-avatar">AM</span><span>Abel M.</span></div></td><td><span class="pos">ET-3-85472</span></td><td><span class="pos">Cable</span></td><td>1</td><td>2026-08-04</td><td>Replacement USB cable</td></tr><tr><td><div class="person"><span class="mini-avatar">DK</span><span>Dawit K.</span></div></td><td><span class="pos">ET-3-81604</span></td><td><span class="pos">Charger</span></td><td>1</td><td>2026-08-03</td><td>POS charging unit</td></tr></tbody></table></div></section>
+        <section class="module-section panel view" id="tasks" data-view-panel="tasks">
+          <div class="panel-head">
+            <div>
+              <div class="panel-title">Technical Tasks &amp; Material Work Orders</div>
+              <div class="panel-note">Track which cashier requires material replacements, what equipment is being swapped, and which technician is assigned to work on it.</div>
+            </div>
+            <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+              <button class="btn" id="exportTasks">⇩ Export tasks</button>
+              <button class="btn btn-primary" id="openTaskModal">＋ Create task</button>
+            </div>
+          </div>
+          <div class="task-metrics-row">
+            <div style="background:#f4f8f6;border-radius:10px;padding:12px 14px;border:1px solid #e1ebe7;">
+              <span style="color:var(--muted);font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.5px;display:block;">Total Work Orders</span>
+              <b id="taskTotalCount" style="display:block;font-size:20px;letter-spacing:-0.5px;margin-top:4px;color:var(--ink);">5</b>
+            </div>
+            <div style="background:#fff9ed;border-radius:10px;padding:12px 14px;border:1px solid #fed7aa;">
+              <span style="color:#b45309;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.5px;display:block;">In Progress</span>
+              <b id="taskProgressCount" style="display:block;font-size:20px;letter-spacing:-0.5px;margin-top:4px;color:#c2410c;">1</b>
+            </div>
+            <div style="background:#fff1f2;border-radius:10px;padding:12px 14px;border:1px solid #fecdd3;">
+              <span style="color:#be123c;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.5px;display:block;">Pending Allocation</span>
+              <b id="taskPendingCount" style="display:block;font-size:20px;letter-spacing:-0.5px;margin-top:4px;color:#e11d48;">2</b>
+            </div>
+            <div style="background:#f0fdf4;border-radius:10px;padding:12px 14px;border:1px solid #bbf7d0;">
+              <span style="color:#15803d;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.5px;display:block;">Completed &amp; Issued</span>
+              <b id="taskCompletedCount" style="display:block;font-size:20px;letter-spacing:-0.5px;margin-top:4px;color:#16a34a;">2</b>
+            </div>
+          </div>
+          <div class="fleet-toolbar">
+            <div class="tabs">
+              <button class="tab active" data-task-filter="all">All tasks</button>
+              <button class="tab" data-task-filter="Pending">Pending</button>
+              <button class="tab" data-task-filter="In Progress">In Progress</button>
+              <button class="tab" data-task-filter="Completed">Completed</button>
+            </div>
+            <input class="search" id="taskSearch" placeholder="Search cashier, technician, material, vehicle, or ticket…">
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Ticket</th>
+                  <th>Task / Description</th>
+                  <th>Cashier &amp; Vehicle</th>
+                  <th>Material to Change</th>
+                  <th>Assigned Technician</th>
+                  <th>Priority</th>
+                  <th>Status</th>
+                  <th>Due Date</th>
+                  <th style="text-align:right">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="taskRows">
+                <!-- Rendered dynamically -->
+              </tbody>
+            </table>
+          </div>
+          <div class="section-divider"></div>
+          <div class="subsection-head">
+            <div>
+              <b>Hardware Technicians on Duty</b>
+              <span>Hardware specialists deployed for POS terminal swaps, charger repairs, and cable replacements.</span>
+            </div>
+          </div>
+          <div class="directory-list" id="technicianDirectory">
+            <!-- Rendered dynamically -->
+          </div>
+        </section>
+        <section class="module-section panel view" id="reports" data-view-panel="reports"><div class="panel-head"><div><div class="panel-title">Reports</div><div class="panel-note">Today’s operational summary, ready for handover.</div></div><button class="btn" id="generateReport">Download summary</button></div><div class="report-cards"><div class="report-card"><span>Assigned vehicles</span><b id="reportAssigned">5</b></div><div class="report-card"><span>Personnel linked</span><b id="reportPersonnel">12</b></div><div class="report-card"><span>Open actions</span><b id="reportActions">2</b></div></div></section>
+        <section class="module-section view" id="finance" data-view-panel="finance">
+          <div class="finance-grid">
+            <article class="panel">
+              <div class="panel-head">
+                <div>
+                  <div class="panel-title">Card finance audit</div>
+                  <div class="panel-note" id="financeImportStatus">Card inventory by cashier: Active, Corrupt, Total, and On hand.</div>
+                </div>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+                  <button class="btn btn-primary" id="openFinanceRecordModal">＋ Add entry</button>
+                  <button class="btn" id="openFinanceColModal">＋ Add month / day column</button>
+                  <button class="btn" id="uploadFinanceAudit">⇪ Upload Excel</button>
+                  <button class="btn" id="exportFinanceAudit">⇩ Export Excel</button>
+                  <input id="financeFileInput" type="file" accept=".xlsx,.xls,.csv" hidden="">
+                </div>
+              </div>
+              <div class="finance-metrics">
+                <div class="finance-metric"><span>Active cards</span><b id="financeActive">6,425</b></div>
+                <div class="finance-metric"><span>Corrupt cards</span><b id="financeCorrupt">102</b></div>
+                <div class="finance-metric"><span>Cards on hand</span><b id="financeOnHand">471</b></div>
+              </div>
+              <div class="table-wrap">
+                <table>
+                  <thead id="financeAuditHead"><tr><th>S/No</th><th>Name</th><th>Status</th><th>March 31</th><th>April 1-30</th><th>May 1-31</th><th>June 1-30</th><th>July 1-22</th><th>Total</th><th>On hand</th><th style="text-align:right">Actions</th></tr></thead>
+                  <tbody id="financeRows"><tr class="editable-row" data-row-idx="0" title="Double click to edit entry"><td>1</td><td>LENSA BOGALE</td><td><span class="audit-status audit-active">Activate</span></td><td>17</td><td>421</td><td>458</td><td>565</td><td>432</td><td>1893</td><td>195</td><td style="text-align:right"><div style="display:inline-flex;gap:4px"><button class="action" data-edit-finance="0">Edit</button><button class="action" style="color:var(--red)" data-delete-finance="0">Delete</button></div></td></tr><tr class="editable-row" data-row-idx="1" title="Double click to edit entry"><td></td><td></td><td><span class="audit-status audit-corrupt">Corrupt</span></td><td>1</td><td>7</td><td>8</td><td>9</td><td>12</td><td>37</td><td></td><td style="text-align:right"><div style="display:inline-flex;gap:4px"><button class="action" data-edit-finance="1">Edit</button><button class="action" style="color:var(--red)" data-delete-finance="1">Delete</button></div></td></tr><tr class="editable-row" data-row-idx="2" title="Double click to edit entry"><td>2</td><td>Tsega Befikadu</td><td><span class="audit-status audit-active">Activate</span></td><td>17</td><td>546</td><td>428</td><td>634</td><td>437</td><td>2062</td><td>143</td><td style="text-align:right"><div style="display:inline-flex;gap:4px"><button class="action" data-edit-finance="2">Edit</button><button class="action" style="color:var(--red)" data-delete-finance="2">Delete</button></div></td></tr><tr class="editable-row" data-row-idx="3" title="Double click to edit entry"><td></td><td></td><td><span class="audit-status audit-corrupt">Corrupt</span></td><td>1</td><td>9</td><td>4</td><td>13</td><td>6</td><td>33</td><td></td><td style="text-align:right"><div style="display:inline-flex;gap:4px"><button class="action" data-edit-finance="3">Edit</button><button class="action" style="color:var(--red)" data-delete-finance="3">Delete</button></div></td></tr><tr class="editable-row" data-row-idx="4" title="Double click to edit entry"><td>3</td><td>Melat Tewodros</td><td><span class="audit-status audit-active">Activate</span></td><td>3</td><td>601</td><td>478</td><td>850</td><td>538</td><td>2470</td><td>133</td><td style="text-align:right"><div style="display:inline-flex;gap:4px"><button class="action" data-edit-finance="4">Edit</button><button class="action" style="color:var(--red)" data-delete-finance="4">Delete</button></div></td></tr><tr class="editable-row" data-row-idx="5" title="Double click to edit entry"><td></td><td></td><td><span class="audit-status audit-corrupt">Corrupt</span></td><td></td><td>8</td><td>9</td><td>9</td><td>6</td><td>32</td><td></td><td style="text-align:right"><div style="display:inline-flex;gap:4px"><button class="action" data-edit-finance="5">Edit</button><button class="action" style="color:var(--red)" data-delete-finance="5">Delete</button></div></td></tr></tbody>
+                </table>
+              </div>
+            </article>
+            <article class="panel">
+              <div class="panel-head">
+                <div>
+                  <div class="panel-title">Finance auditors</div>
+                  <div class="panel-note">People authorized to review the card register.</div>
+                </div>
+                <button class="link-button" id="openAuditorModal">Add auditor →</button>
+              </div>
+              <div class="directory-list" id="auditorDirectory"><div class="directory-row"><span class="mini-avatar">MT</span><div class="directory-name"><b>Mekdes T.</b><span>FA-001 · +251 91 204 8801</span></div><span class="directory-count">Active</span></div></div>
+            </article>
+          </div>
+        </section>
+        <section class="module-section panel view" id="users" data-view-panel="users">
+          <div class="panel-head"><div><div class="panel-title">User accounts</div><div class="panel-note">Admins only — manage who can sign in to Menged and what they're allowed to do.</div></div><button class="btn btn-primary" id="openUserModal">＋ Add user</button></div>
+          <div class="table-wrap"><table><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Added</th><th style="text-align:right">Actions</th></tr></thead><tbody id="userRows"><!-- Rendered dynamically --></tbody></table></div>
+        </section>
+        <section class="module-section panel view" id="settings" data-view-panel="settings"><div class="panel-head"><div><div class="panel-title">Settings</div><div class="panel-note">Configure dashboard alerts and safety reminders.</div></div></div><div class="settings-list"><div class="setting-row"><div><b>Unassigned vehicle alerts</b><span>Show highlighted attention items when a driver or cashier is missing.</span></div><input class="switch" id="assignmentAlerts" type="checkbox" checked=""></div><div class="setting-row"><div><b>POS pairing reminders</b><span>Notify the operations team when a POS device is not linked.</span></div><input class="switch" id="posReminders" type="checkbox" checked=""></div></div></section>
+        <footer class="app-footer"><strong>MENGED Hardware Team</strong><span class="footer-logo-wrap"><img class="footer-logo" src="menged-hardware-team-logo.png" alt="Powered by Menged hardware team"></span></footer>
+      </div>
+    </main>
+  </div>
+
+  <div class="modal-backdrop" id="auditorModal"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="auditorTitle"><div class="modal-head"><div><h2 id="auditorTitle">Add finance auditor</h2><p>Create an authorized reviewer for daily collections and POS reconciliation.</p></div><button class="close" data-close="auditorModal">×</button></div><form id="auditorForm"><div class="modal-body"><div class="field-grid"><div><label for="auditorName">Full name</label><input class="input" id="auditorName" required="" placeholder="e.g. Hana Bekele"></div><div><label for="auditorId">Employee ID</label><input class="input" id="auditorId" required="" placeholder="e.g. FA-012"></div><div><label for="auditorPhone">Phone number</label><input class="input" id="auditorPhone" placeholder="e.g. +251 9..."></div><div><label for="auditorStatus">Status</label><select class="input" id="auditorStatus"><option>Active</option><option>On leave</option></select></div></div></div><div class="modal-foot"><button type="button" class="btn" data-close="auditorModal">Cancel</button><button class="btn btn-primary" type="submit">Save auditor</button></div></form></div></div>
+  <div class="modal-backdrop" id="materialModal"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="materialTitle"><div class="modal-head"><div><h2 id="materialTitle">Issue material to IT technician</h2><p id="materialSubtitle">Record equipment provided to an IT technician, such as a cable or charger.</p></div><button class="close" data-close="materialModal">×</button></div><form id="materialForm"><div class="modal-body"><div class="field-grid"><div><label for="materialCashierInput">IT Technician <span style="color:var(--muted);font-size:10px;font-weight:400;">— pick from list or type a new name</span></label><input class="input" id="materialCashierInput" list="materialCashierList" required autocomplete="off" placeholder="e.g. Dawit K. — type or pick"><datalist id="materialCashierList"><!-- Populated dynamically, sorted A–Z --></datalist></div><div><label for="materialPlateInput">Plate No. <span style="color:var(--muted);font-size:10px;font-weight:400;">— optional, type or pick</span></label><input class="input" id="materialPlateInput" list="materialPlateList" autocomplete="off" placeholder="e.g. ET-3-81604"><datalist id="materialPlateList"><!-- Populated dynamically, sorted by plate --></datalist></div><div><label for="materialTypeInput">Material <span style="color:var(--muted);font-size:10px;font-weight:400;">— pick or type custom item</span></label><input class="input" id="materialTypeInput" list="materialTypeList" required autocomplete="off" placeholder="e.g. Charger, Cable, SIM card…"><datalist id="materialTypeList"><option value="Braided Type-C Cable"><option value="Cable (USB-A to Type-C)"><option value="Charger (Fast 5V/2A)"><option value="Ethio Telecom 4G SIM"><option value="POS Silicone Case"><option value="POS Touch Digitizer"><option value="Receipt Paper Roll"><option value="Replacement POS Terminal"><option value="Wall Charging Cradle"></datalist></div><div><label for="materialQuantity">Quantity</label><input class="input" id="materialQuantity" min="1" type="number" value="1" required=""></div><div><label for="materialDate">Issue date</label><input class="input" id="materialDate" type="date" required=""></div><div><label for="materialSerial">Serial No.</label><input class="input" id="materialSerial" placeholder="e.g. SN-2201394"></div></div><div style="margin-top:15px"><label for="materialNotes">Notes</label><input class="input" id="materialNotes" placeholder="Optional condition or reference"></div></div><div class="modal-foot"><button type="button" class="btn" data-close="materialModal">Cancel</button><button class="btn btn-primary" type="submit">Save issue</button></div></form></div></div>
+  <div class="modal-backdrop" id="importModal"><div class="modal wide" role="dialog" aria-modal="true" aria-labelledby="importTitle"><div class="modal-head"><div><h2 id="importTitle">Import fleet data</h2><p>Upload a spreadsheet, map the columns, validate, then add records in one batch.</p></div><button class="close" data-close="importModal">×</button></div><div class="modal-body"><div class="dropzone" id="dropzone"><div class="upload-orb">⇪</div><b>Drop an Excel or CSV file here</b><span>or choose a file from your computer</span><button class="btn btn-primary" id="browseFile" type="button">Choose file</button><input type="file" id="fileInput" accept=".xlsx,.xls,.csv" hidden=""><div class="file-note">Supported formats: .xlsx, .xls, .csv · Maximum 5 MB</div></div><div class="import-workflow" id="importWorkflow"><div class="import-meta"><div class="file-chip" id="fileType">CSV</div><div style="flex:1"><b id="fileName">fleet.csv</b><span id="fileInfo">0 rows detected</span></div><button class="link-button" id="changeFile">Change file</button></div><div class="panel-title" style="margin:0 0 9px">Map your columns</div><div class="mapping" id="mappingControls"></div><div class="validation" id="validationMessage"></div><div class="panel-title" style="margin:0 0 9px">Preview</div><div class="preview-wrap"><table><thead id="previewHead"></thead><tbody id="previewBody"></tbody></table></div></div></div><div class="modal-foot"><button type="button" class="btn" data-close="importModal">Cancel</button><button class="btn btn-primary" id="importRecords" disabled="">Import valid records</button></div></div></div>
+  <div class="modal-backdrop" id="helpModal"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="helpTitle"><div class="modal-head"><div><h2 id="helpTitle">Menged Fleet Help Center</h2><p>Quick operational instructions and system guide.</p></div><button class="close" data-close="helpModal">×</button></div><div class="modal-body"><div style="display:grid;gap:15px"><div><b style="color:var(--teal)">Data Workspace</b><p style="margin:4px 0 0;color:var(--muted);font-size:12px">Use the "Upload data" button in the sidebar or header to import fleet records from Excel/CSV files. Use "Save data" to save all changes locally, or "Export data" to download a complete backup.</p></div><div><b style="color:var(--teal)">Managing Assignments</b><p style="margin:4px 0 0;color:var(--muted);font-size:12px">Click directly on any Driver, Cashier, or POS cell in the fleet table to type a name right there — press Enter or click away to save, or Escape to cancel. Click the status pill to change Active/Idle/Unassigned instantly. "Clear" resets a row. Unassigned vehicles are automatically flagged in the attention queue.</p></div><div><b style="color:var(--teal)">Finance Card Audit</b><p style="margin:4px 0 0;color:var(--muted);font-size:12px">Click "+ Add entry" or click "Edit" on any row to add or edit active and corrupt card numbers per cashier. Use "+ Add month / day column" to add custom period dates.</p></div></div></div><div class="modal-foot"><button type="button" class="btn btn-primary" data-close="helpModal">Got it</button></div></div></div>
+  <div class="modal-backdrop" id="noticeModal"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="noticeTitle"><div class="modal-head"><div><h2 id="noticeTitle">Operational Notifications</h2><p>Recent system events and attention alerts.</p></div><button class="close" data-close="noticeModal">×</button></div><div class="modal-body"><div class="queue" style="padding:0"><div class="queue-row" style="cursor: pointer;"><div class="queue-symbol">!</div><div class="queue-content"><b>ET-3-84216 needs assignment</b><span>Driver or cashier unlinked on route Piassa — Megenagna</span></div><div class="queue-time">10m ago</div></div><div class="queue-row" style="cursor: pointer;"><div class="queue-symbol">✓</div><div class="queue-content"><b>POS-018 ready to pair</b><span>Unallocated POS terminal available</span></div><div class="queue-time">2h ago</div></div><div class="queue-row" style="cursor: pointer;"><div class="queue-symbol">◒</div><div class="queue-content"><b>2 vehicles due for inspection</b><span>ET-3-83190 scheduled for maintenance</span></div><div class="queue-time">Today</div></div></div></div><div class="modal-foot"><button type="button" class="btn btn-primary" data-close="noticeModal">Close notifications</button></div></div></div>
+  
+  <!-- Logout Confirmation Modal -->
+  <div class="modal-backdrop" id="logoutConfirmModal">
+    <div class="modal" style="max-width: 440px;" role="dialog" aria-modal="true" aria-labelledby="logoutModalTitle">
+      <div class="modal-head">
+        <div>
+          <h2 id="logoutModalTitle" style="color: #b91c1c; display: flex; align-items: center; gap: 8px;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            Sign out of Menged
+          </h2>
+          <p>End your active fleet operations session</p>
+        </div>
+        <button class="close" data-close="logoutConfirmModal">×</button>
+      </div>
+      <div class="modal-body" style="padding: 20px 22px 14px;">
+        <p style="color: #3b504b; font-size: 13.5px; line-height: 1.55; margin: 0;">
+          Are you sure you want to sign out? Your session token will be cleared and you will be redirected to the sign-in screen.
+        </p>
+      </div>
+      <div class="modal-foot" style="gap: 10px;">
+        <button type="button" class="btn" data-close="logoutConfirmModal">Stay signed in</button>
+        <button type="button" class="btn" id="confirmLogoutBtn" style="background: #dc2626; color: #fff; border-color: #b91c1c; box-shadow: 0 4px 12px rgba(220,38,38,.2);">Confirm Sign out</button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Technical Task Modal -->
+  <div class="modal-backdrop" id="taskModal">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="taskModalTitle">
+      <div class="modal-head">
+        <div>
+          <h2 id="taskModalTitle">Create Technical Task</h2>
+          <p>Assign a technician to change or repair cashier hardware equipment.</p>
+        </div>
+        <button class="close" data-close="taskModal">×</button>
+      </div>
+      <form id="taskForm">
+        <div class="modal-body">
+          <div class="field-grid">
+            <div style="grid-column:1/-1">
+              <label for="taskTitleInput">Task Title / Reason</label>
+              <input class="input" id="taskTitleInput" required placeholder="e.g. Replace damaged POS battery pack &amp; charging port">
+            </div>
+            <div>
+              <label for="taskCashierInput">Cashier Requiring Change <span style="color:var(--muted);font-size:10px;font-weight:400;">— pick from list or type a new name</span></label>
+              <input class="input" id="taskCashierInput" list="cashierTaskList" required autocomplete="off"
+                placeholder="e.g. Rahel M. — type or pick from list">
+              <datalist id="cashierTaskList">
+                <!-- Populated dynamically, sorted A–Z -->
+              </datalist>
+            </div>
+            <div>
+              <label for="taskVehicleInput">Assigned Vehicle / Station <span style="color:var(--muted);font-size:10px;font-weight:400;">— optional, type or pick</span></label>
+              <input class="input" id="taskVehicleInput" list="vehicleTaskList" autocomplete="off"
+                placeholder="e.g. ET-3-81604 (M-011) or leave blank">
+              <datalist id="vehicleTaskList">
+                <!-- Populated dynamically, sorted by plate -->
+              </datalist>
+            </div>
+            <div>
+              <label for="taskMaterialInput">Material / Hardware to Change <span style="color:var(--muted);font-size:10px;font-weight:400;">— type or pick from list</span></label>
+              <input class="input" id="taskMaterialInput" list="materialTaskList" required autocomplete="off"
+                placeholder="e.g. POS Li-ion Battery, Braided Cable, SIM Card…">
+              <datalist id="materialTaskList">
+                <option value="Braided Type-C Cable">
+                <option value="Ethio Telecom 4G SIM Card">
+                <option value="POS Fast Charger (5V/2A)">
+                <option value="POS Li-ion Battery Pack">
+                <option value="POS Touch Digitizer Assembly">
+                <option value="Protective POS Silicone Case">
+                <option value="Replacement POS Terminal Unit">
+                <option value="Thermal Paper Rolls (x5)">
+                <option value="USB-A to Type-C Cable">
+                <option value="Wall-mount Charging Cradle">
+              </datalist>
+            </div>
+            <div>
+              <label for="taskTechnicianInput">Assigned Hardware Technician <span style="color:var(--muted);font-size:10px;font-weight:400;">— pick or type a name</span></label>
+              <input class="input" id="taskTechnicianInput" list="technicianTaskList" required autocomplete="off"
+                placeholder="e.g. Dawit K. — type or pick from list">
+              <datalist id="technicianTaskList">
+                <!-- Populated dynamically, sorted A–Z -->
+              </datalist>
+            </div>
+            <div>
+              <label for="taskPrioritySelect">Priority</label>
+              <select class="input" id="taskPrioritySelect">
+                <option value="Normal">Normal</option>
+                <option value="High">High</option>
+                <option value="Urgent">Urgent</option>
+              </select>
+            </div>
+            <div>
+              <label for="taskStatusSelect">Task Status</label>
+              <select class="input" id="taskStatusSelect">
+                <option value="Pending">Pending</option>
+                <option value="In Progress">In Progress</option>
+                <option value="Completed">Completed</option>
+              </select>
+            </div>
+            <div>
+              <label for="taskDueDateInput">Target Due Date</label>
+              <input class="input" id="taskDueDateInput" type="date" required>
+            </div>
+          </div>
+          <div style="margin-top:15px">
+            <label for="taskNotesInput">Issue &amp; Handover Notes</label>
+            <input class="input" id="taskNotesInput" placeholder="Specific failure symptoms, drop-off location, or replacement serial number">
+          </div>
+        </div>
+        <div class="modal-foot">
+          <button type="button" class="btn" data-close="taskModal">Cancel</button>
+          <button class="btn btn-primary" type="submit" id="saveTaskBtn">Save task</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Finance Record Add/Edit Modal -->
+  <div class="modal-backdrop" id="financeRecordModal">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="financeRecordTitle">
+      <div class="modal-head">
+        <div>
+          <h2 id="financeRecordTitle">Add card audit entry</h2>
+          <p>Update active or corrupt card counts per period or date for a cashier.</p>
+        </div>
+        <button class="close" data-close="financeRecordModal">×</button>
+      </div>
+      <form id="financeRecordForm">
+        <div class="modal-body">
+          <div class="field-grid">
+            <div>
+              <label for="finCashierName">Cashier Name</label>
+              <input class="input" id="finCashierName" list="cashierSuggestions" required="" placeholder="e.g. LENSA BOGALE">
+              <datalist id="cashierSuggestions"></datalist>
+            </div>
+            <div>
+              <label for="finStatus">Card Status Type</label>
+              <select class="input" id="finStatus">
+                <option value="Activate">Activate (Active Cards)</option>
+                <option value="Corrupt">Corrupt (Corrupt Cards)</option>
+              </select>
+            </div>
+          </div>
+          <div style="margin-top:15px">
+            <label style="margin-bottom:8px">Period / Month / Day Card Numbers</label>
+            <div class="field-grid" id="finPeriodFields"></div>
+          </div>
+          <div class="field-grid" style="margin-top:15px">
+            <div>
+              <label for="finOnHand">Cards On Hand</label>
+              <input class="input" id="finOnHand" type="number" min="0" placeholder="e.g. 150">
+            </div>
+            <div>
+              <label>Calculated Total</label>
+              <input class="input" id="finTotal" readonly="" style="background:#f4f7f6;font-weight:800;color:var(--teal)" value="0">
+            </div>
+          </div>
+        </div>
+        <div class="modal-foot">
+          <button type="button" class="btn" data-close="financeRecordModal">Cancel</button>
+          <button class="btn btn-primary" type="submit">Save card record</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Finance Column Add Modal -->
+  <div class="modal-backdrop" id="financeColumnModal">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="financeColTitle">
+      <div class="modal-head">
+        <div>
+          <h2 id="financeColTitle">Add audit period column</h2>
+          <p>Add a new month, date range, or daily column to track active and corrupt cards.</p>
+        </div>
+        <button class="close" data-close="financeColumnModal">×</button>
+      </div>
+      <form id="financeColumnForm">
+        <div class="modal-body">
+          <div>
+            <label for="newColName">Month or Date Column Name</label>
+            <input class="input" id="newColName" required="" placeholder="e.g. August 1-31, September, or Day 1">
+          </div>
+        </div>
+        <div class="modal-foot">
+          <button type="button" class="btn" data-close="financeColumnModal">Cancel</button>
+          <button class="btn btn-primary" type="submit">Add column</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="userModal">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="userModalTitle">
+      <div class="modal-head">
+        <div>
+          <h2 id="userModalTitle">Add user</h2>
+          <p>Create a login for staff, reception, reports, or another admin.</p>
+        </div>
+        <button class="close" data-close="userModal">×</button>
+      </div>
+      <form id="userForm">
+        <div class="modal-body">
+          <div class="field-grid">
+            <div>
+              <label for="userNameInput">Full name</label>
+              <input class="input" id="userNameInput" required placeholder="e.g. Selam W.">
+            </div>
+            <div>
+              <label for="userEmailInput">Email</label>
+              <input class="input" id="userEmailInput" type="email" required placeholder="e.g. selam@menged.et">
+            </div>
+            <div>
+              <label for="userRoleSelect">Role</label>
+              <select class="input" id="userRoleSelect">
+                <option value="staff">Staff</option>
+                <option value="reception">Reception</option>
+                <option value="reports">Reports</option>
+                <option value="admin">Admin</option>
+              </select>
+            </div>
+            <div>
+              <label for="userStatusSelect">Status</label>
+              <select class="input" id="userStatusSelect">
+                <option value="Active">Active</option>
+                <option value="Inactive">Inactive</option>
+              </select>
+            </div>
+            <div style="grid-column:1/-1">
+              <label for="userPasswordInput">Password <span id="userPasswordHint" style="color:var(--muted);font-size:10px;font-weight:400;">— minimum 8 characters</span></label>
+              <input class="input" id="userPasswordInput" type="password" placeholder="Set a login password" autocomplete="new-password">
+            </div>
+          </div>
+        </div>
+        <div class="modal-foot">
+          <button type="button" class="btn" data-close="userModal">Cancel</button>
+          <button class="btn btn-primary" type="submit" id="saveUserBtn">Save user</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+  <script>
+    (function () {
+      // ------------------------------------------------------------------
+      // Auth + API layer — this dashboard is now backed by the live
+      // Menged API (Express + Supabase), not browser localStorage.
+      // ------------------------------------------------------------------
+      var API_BASE = (function () {
+        var host = window.location.hostname;
+        var isLocal = host === 'localhost' || host === '127.0.0.1' || window.location.protocol === 'file:';
+        return isLocal ? 'http://localhost:4000/api' : 'https://menged.onrender.com/api';
+      })();
+
+      var authToken = localStorage.getItem('mengedToken') || sessionStorage.getItem('mengedToken');
+      var currentUser = null;
+      try {
+        currentUser = JSON.parse(localStorage.getItem('mengedUser') || sessionStorage.getItem('mengedUser') || 'null');
+      } catch (e) { currentUser = null; }
+      var isAdmin = !!(currentUser && currentUser.role === 'admin');
+      var isReception = !!(currentUser && currentUser.role === 'reception');
+      var isReports = !!(currentUser && currentUser.role === 'reports');
+      // Reception can edit/delete Issue Material the same as admin; plain
+      // staff can still view and add, just not edit/delete.
+      var canManageMaterials = isAdmin || isReception;
+      // 'reports' accounts only ever see Reports, Tasks, and Finance Audit.
+      var REPORTS_ROLE_PANELS = ['reports', 'tasks', 'finance'];
+      function roleLabel(role) {
+        if (role === 'admin') return 'Admin';
+        if (role === 'reception') return 'Reception';
+        if (role === 'reports') return 'Reports';
+        return 'Staff';
+      }
+
+      function goToLogin() {
+        localStorage.removeItem('mengedToken'); localStorage.removeItem('mengedUser');
+        sessionStorage.removeItem('mengedToken'); sessionStorage.removeItem('mengedUser');
+        window.location.href = 'login.html';
+      }
+
+      if (!authToken) {
+        goToLogin();
+        return; // stop this script from running further in a real browser
+      }
+
+      async function api(path, options) {
+        options = options || {};
+        var headers = Object.assign({ 'Content-Type': 'application/json' }, options.headers || {});
+        headers['Authorization'] = 'Bearer ' + authToken;
+        var res;
+        try {
+          res = await fetch(API_BASE + path, Object.assign({}, options, { headers: headers }));
+        } catch (networkErr) {
+          throw new Error("Can't reach the Menged server right now. Check your connection and try again.");
+        }
+        if (res.status === 401) { goToLogin(); throw new Error('Session expired.'); }
+        var data = null;
+        try { data = await res.json(); } catch (e) { data = null; }
+        if (!res.ok) { throw new Error((data && data.error) || ('Request failed (' + res.status + ')')); }
+        return data;
+      }
+      function apiGet(path) { return api(path); }
+      function apiPost(path, body) { return api(path, { method: 'POST', body: JSON.stringify(body || {}) }); }
+      function apiPut(path, body) { return api(path, { method: 'PUT', body: JSON.stringify(body || {}) }); }
+      function apiDelete(path) { return api(path, { method: 'DELETE' }); }
+
+      // ------------------------------------------------------------------
+      // In-memory cache of server data. Every render*() function below
+      // reads from these arrays; every write goes to the API first, then
+      // updates these arrays from the server's response.
+      // ------------------------------------------------------------------
+      var defaultDrivers = ['Samuel T.','Mulu G.','Kebede A.','Henok B.','Mesfin N.','Yonas A.','Alemayehu S.'];
+      var defaultCashiers = ['Rahel M.','Tigist D.','Liya K.','Sara W.','Marta F.','Hana E.','Betelhem A.'];
+      var defaultPos = ['POS-004','POS-009','POS-012','POS-018','POS-023','POS-027','POS-031'];
+      var defaultFinanceAudit = { headers: ['S/No','Name','Status','Total','On hand'], rows: [] };
+      var defaultTechnicians = [
+        { name: 'Dawit K.', role: 'Lead Hardware Engineer', phone: '+251 91 144 2090' },
+        { name: 'Abel M.', role: 'Field Technician', phone: '+251 92 388 4122' },
+        { name: 'Kidus T.', role: 'POS & Network Specialist', phone: '+251 93 501 9931' },
+        { name: 'Yared G.', role: 'Hardware Support', phone: '+251 94 772 1088' }
+      ];
+
+      var fleet = [];
+      var auditors = [];
+      var financeAudit = { headers: defaultFinanceAudit.headers.slice(), rows: [], recordIds: [] };
+      var materialIssues = [];
+      var tasks = [];
+      var users = [];
+      var activeFilter = 'all';
+      var activeTaskFilter = 'all';
+      var editingTaskId = null;
+      var editingUserId = null;
+      var editingMaterialId = null;
+      var editingFinanceRowIndex = -1;
+      var importState = {headers:[], rows:[], mapping:{}, fileName:''};
+      var fields = [
+        {key:'plate',label:'Plate number',required:true,aliases:['plate','plate number','plate no','plate_no','license']},
+        {key:'side',label:'Side number',required:false,aliases:['side','side number','side no','side_no']},
+        {key:'type',label:'Vehicle type',required:false,aliases:['type','vehicle type','bus type']},
+        {key:'driver',label:'Driver name',required:false,aliases:['driver','driver name']},
+        {key:'cashier',label:'Cashier name',required:false,aliases:['cashier','cashier name']},
+        {key:'pos',label:'POS device',required:false,aliases:['pos','pos id','pos device','terminal']}
+      ];
+
+      function clone(value) { return JSON.parse(JSON.stringify(value)); }
+
+      function applyFinanceGrid(grid) {
+        financeAudit.headers = grid.headers;
+        financeAudit.rows = grid.rows;
+        financeAudit.recordIds = grid.recordIds;
+      }
+
+      async function loadAllData() {
+        var results = await Promise.all([
+          apiGet('/fleet'),
+          apiGet('/auditors'),
+          apiGet('/materials'),
+          apiGet('/finance-audit'),
+          apiGet('/tasks'),
+        ]);
+        fleet = results[0];
+        auditors = results[1];
+        materialIssues = results[2];
+        applyFinanceGrid(results[3]);
+        tasks = results[4] || [];
+      }
+
+      async function loadUsers() {
+        users = await apiGet('/auth/users');
+        renderUsers();
+      }
+
+      async function initApp() {
+        var overlay = document.getElementById('cloudLoadingOverlay');
+        var overlayText = document.getElementById('cloudLoadingText');
+        if (currentUser) {
+          var nameEl = document.getElementById('userNameLabel');
+          var roleEl = document.getElementById('userRoleLabel');
+          var avEl = document.getElementById('userAvatar');
+          if (nameEl) nameEl.textContent = currentUser.name || currentUser.email;
+          if (roleEl) roleEl.textContent = currentUser.role === 'admin' ? 'Fleet administrator' : roleLabel(currentUser.role);
+          if (avEl) avEl.textContent = initials(currentUser.name || currentUser.email || '');
+        }
+        var usersNavEl = document.getElementById('usersNavLink');
+        if (usersNavEl) usersNavEl.style.display = isAdmin ? '' : 'none';
+        // 'reports' accounts only get Reports, Tasks, and Finance Audit —
+        // hide every other nav link (Dashboard, Fleet, Issue material,
+        // Cashiers, Users, Settings).
+        if (isReports) {
+          document.querySelectorAll('.nav a[data-nav]').forEach(function (link) {
+            if (REPORTS_ROLE_PANELS.indexOf(link.dataset.nav) === -1) link.style.display = 'none';
+          });
+          var manageLabelEl = document.getElementById('manageNavLabel');
+          if (manageLabelEl) manageLabelEl.style.display = 'none';
+        }
+        var matActionsHead = document.getElementById('materialActionsHeader');
+        if (matActionsHead) matActionsHead.style.display = canManageMaterials ? '' : 'none';
+        try {
+          await loadAllData();
+          if (isAdmin) { try { await loadUsers(); } catch (e) { /* non-fatal — Users panel will show its own error on open */ } }
+          renderAll();
+          if (overlay) overlay.style.display = 'none';
+        } catch (err) {
+          if (overlayText) {
+            overlayText.textContent = err.message || "Can't reach the Menged server. Retrying…";
+            overlayText.style.color = '#bd504a';
+          }
+          // Retry once after a short delay — Render's free tier can take
+          // 30–50s to wake up from an idle "spun down" state.
+          setTimeout(function () {
+            if (overlayText) overlayText.textContent = 'Still connecting — the server may be waking up…';
+            initApp();
+          }, 4000);
+        }
+      }
+      async function saveAllData() {
+        showToast('Syncing with Menged Cloud…');
+        try {
+          await loadAllData();
+          renderAll();
+          showToast('Everything is up to date with Supabase.');
+        } catch (err) {
+          showToast(err.message || 'Could not sync right now.');
+        }
+      }
+      function exportAllData() { var exportPayload={exportedAt:new Date().toISOString(),fleet:fleet,auditors:auditors,financeAudit:financeAudit,materialIssues:materialIssues}; var exportUrl=URL.createObjectURL(new Blob([JSON.stringify(exportPayload,null,2)],{type:'application/json'})); var exportLink=document.createElement('a'); exportLink.href=exportUrl; exportLink.download='menged-fleet-backup.json'; exportLink.click(); setTimeout(function(){URL.revokeObjectURL(exportUrl);},1000); showToast('Full data backup exported.'); }
+      function initials(value) { return value ? value.split(/\s+/).map(function (part) { return part.charAt(0); }).join('').slice(0,2).toUpperCase() : '—'; }
+      function escapeHtml(value) { return String(value || '').replace(/[&<>'"]/g, function (char) { return {'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[char]; }); }
+      function statusClass(status) { return status === 'Active' ? 'active-status' : status === 'Idle' ? 'idle-status' : 'unassigned-status'; }
+      function personnel() { return {drivers:unique(defaultDrivers.concat(fleet.map(function (x) { return x.driver; }).filter(Boolean))), cashiers:unique(defaultCashiers.concat(fleet.map(function (x) { return x.cashier; }).filter(Boolean))), pos:unique(defaultPos.concat(fleet.map(function (x) { return x.pos; }).filter(Boolean)))}; }
+      function unique(values) { return values.filter(function (value,index) { return values.indexOf(value) === index; }); }
+      
+      function bindEvent(idOrSelector, event, handler) {
+        if (!idOrSelector) return;
+        if (typeof idOrSelector === 'string') {
+          var el = document.getElementById(idOrSelector);
+          if (el) {
+            el.addEventListener(event, handler);
+            return;
+          }
+          var nodes = document.querySelectorAll(idOrSelector);
+          if (nodes.length > 0) {
+            nodes.forEach(function(node) { node.addEventListener(event, handler); });
+          }
+        }
+      }
+
+      function downloadHtmlSource() {
+        var htmlContent = '<!doctype html>\n' + document.documentElement.outerHTML;
+        var blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+        var link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = 'Menged-Fleet-Dashboard.html';
+        link.click();
+        setTimeout(function () { URL.revokeObjectURL(link.href); }, 1000);
+        showToast('Menged-Fleet-Dashboard.html source code downloaded.');
+      }
+
+      function renderStats() {
+        var active=fleet.filter(function (b) { return b.status==='Active'; }).length;
+        var idle=fleet.filter(function (b) { return b.status==='Idle'; }).length;
+        var unassigned=fleet.filter(function (b) { return b.status==='Unassigned'; }).length;
+        var elCount = document.getElementById('fleetCount'); if(elCount) elCount.textContent=fleet.length;
+        var elActive = document.getElementById('activeCount'); if(elActive) elActive.textContent=active;
+        var elIdle = document.getElementById('idleCount'); if(elIdle) elIdle.textContent=idle;
+        var elUnassigned = document.getElementById('unassignedCount'); if(elUnassigned) elUnassigned.textContent=unassigned;
+        var elBadge = document.getElementById('attentionBadge'); if(elBadge) elBadge.textContent=unassigned;
+      }
+
+      function renderDirectories() {
+        var p=personnel();
+        var makeRows=function(names,kind){return names.slice(0,6).map(function(name){var linked=fleet.filter(function(bus){return bus[kind]===name;});var detail=linked.length?linked.map(function(bus){return bus.plate;}).join(', '):'Not currently assigned';return '<div class="directory-row"><span class="mini-avatar">'+initials(name)+'</span><div class="directory-name"><b>'+escapeHtml(name)+'</b><span>'+escapeHtml(detail)+'</span></div><span class="directory-count">'+linked.length+' vehicle'+(linked.length===1?'':'s')+'</span></div>';}).join('');};
+        var cshEl = document.getElementById('cashierDirectory'); if(cshEl) cshEl.innerHTML=makeRows(p.cashiers,'cashier');
+        var open=fleet.filter(function(bus){return bus.status==='Unassigned';});
+        var sumEl = document.getElementById('assignmentSummary');
+        if(sumEl) sumEl.innerHTML=(open.length?open:fleet.slice(0,3)).slice(0,4).map(function(bus){var issue=[];if(!bus.driver)issue.push('driver');if(!bus.cashier)issue.push('cashier');if(!bus.pos)issue.push('POS');var detail=issue.length?'Needs '+issue.join(', ')+' assignment':'Fully assigned';return '<div class="assignment-card"><div class="vehicle-icon">▰</div><div style="flex:1"><b>'+escapeHtml(bus.plate)+' · '+escapeHtml(bus.side)+'</b><span>'+escapeHtml(detail)+'</span></div><button class="btn" data-open-bus="'+bus.id+'">Manage</button></div>';}).join('');
+        var assigned=fleet.filter(function(bus){return bus.driver&&bus.cashier;}).length;
+        var linked=fleet.filter(function(bus){return bus.driver;}).length+fleet.filter(function(bus){return bus.cashier;}).length;
+        var rAss = document.getElementById('reportAssigned'); if(rAss) rAss.textContent=assigned;
+        var rPer = document.getElementById('reportPersonnel'); if(rPer) rPer.textContent=linked;
+        var rAct = document.getElementById('reportActions'); if(rAct) rAct.textContent=open.length;
+        var rAssD = document.getElementById('reportAssignedDash'); if(rAssD) rAssD.textContent=assigned;
+        var rPerD = document.getElementById('reportPersonnelDash'); if(rPerD) rPerD.textContent=linked;
+        var rActD = document.getElementById('reportActionsDash'); if(rActD) rActD.textContent=open.length;
+      }
+
+      function numericValue(value) { var number=Number(String(value===undefined||value===null?'':value).replace(/[, _]/g,'')); return isNaN(number)?0:number; }
+
+      function renderFinance() {
+        var headers=financeAudit.headers||defaultFinanceAudit.headers;
+        var rows=financeAudit.rows||[];
+        var totalIndex=headers.findIndex(function(header){return String(header).toLowerCase()==='total';});
+        var onHandIndex=headers.findIndex(function(header){return String(header).toLowerCase()==='on hand';});
+        if(totalIndex<0)totalIndex=headers.length-2;
+        if(onHandIndex<0)onHandIndex=headers.length-1;
+
+        var active=rows.filter(function(row){return String(row[2]||'').toLowerCase()==='activate';}).reduce(function(sum,row){return sum+numericValue(row[totalIndex]);},0);
+        var corrupt=rows.filter(function(row){return String(row[2]||'').toLowerCase()==='corrupt';}).reduce(function(sum,row){return sum+numericValue(row[totalIndex]);},0);
+        var onHand=rows.reduce(function(sum,row){return sum+numericValue(row[onHandIndex]);},0);
+
+        var fAct = document.getElementById('financeActive'); if(fAct) fAct.textContent=active.toLocaleString();
+        var fCor = document.getElementById('financeCorrupt'); if(fCor) fCor.textContent=corrupt.toLocaleString();
+        var fHand = document.getElementById('financeOnHand'); if(fHand) fHand.textContent=onHand.toLocaleString();
+
+        var fHead = document.getElementById('financeAuditHead');
+        if(fHead) fHead.innerHTML='<tr>'+headers.map(function(header){return '<th>'+escapeHtml(header)+'</th>';}).join('')+'<th style="text-align:right">Actions</th></tr>';
+
+        var fRows = document.getElementById('financeRows');
+        if(fRows) {
+          fRows.innerHTML = rows.length ? rows.map(function(row, rIdx){
+            var status = String(row[2] || '');
+            return '<tr class="editable-row" data-row-idx="'+rIdx+'" title="Double click to edit entry">' +
+              headers.map(function(header, index){
+                var value = row[index] === undefined || row[index] === null ? '' : row[index];
+                if (index === 2 && value) return '<td><span class="audit-status '+(status.toLowerCase()==='corrupt'?'audit-corrupt':'audit-active')+'">'+escapeHtml(value)+'</span></td>';
+                return '<td>' + escapeHtml(value) + '</td>';
+              }).join('') +
+              '<td style="text-align:right"><div style="display:inline-flex;gap:4px"><button class="action" data-edit-finance="'+rIdx+'">Edit</button><button class="action" style="color:var(--red)" data-delete-finance="'+rIdx+'">Delete</button></div></td>' +
+              '</tr>';
+          }).join('') : '<tr><td class="empty" colspan="'+(headers.length + 1)+'">Upload an Excel file or click "+ Add entry" to record active/corrupt card numbers.</td></tr>';
+        }
+
+        var audDir = document.getElementById('auditorDirectory'); if(audDir) audDir.innerHTML=auditors.length?auditors.map(function(auditor){return '<div class="directory-row"><span class="mini-avatar">'+initials(auditor.name)+'</span><div class="directory-name"><b>'+escapeHtml(auditor.name)+'</b><span>'+escapeHtml(auditor.employeeId)+' · '+escapeHtml(auditor.phone||'No phone')+'</span></div><span class="directory-count">'+escapeHtml(auditor.status)+'</span></div>';}).join(''):'<div class="auditor-empty">No finance auditors have been added yet.</div>';
+      }
+
+      function openFinanceRecord(rowIndex) {
+        editingFinanceRowIndex = typeof rowIndex === 'number' ? rowIndex : -1;
+        var headers = financeAudit.headers || defaultFinanceAudit.headers;
+        var rows = financeAudit.rows || [];
+        var totalIdx = headers.findIndex(function(h){return String(h).toLowerCase()==='total';});
+        var onHandIdx = headers.findIndex(function(h){return String(h).toLowerCase()==='on hand';});
+        if (totalIdx < 0) totalIdx = headers.length - 2;
+        if (onHandIdx < 0) onHandIdx = headers.length - 1;
+
+        var datalist = document.getElementById('cashierSuggestions');
+        if (datalist) {
+          var names = unique(personnel().cashiers.concat(rows.map(function(r){return r[1];}).filter(Boolean)));
+          datalist.innerHTML = names.map(function(n){ return '<option value="'+escapeHtml(n)+'">'; }).join('');
+        }
+
+        var periodFieldsContainer = document.getElementById('finPeriodFields');
+        var periodInputsHtml = '';
+        for (var c = 3; c < totalIdx; c++) {
+          var colName = headers[c] || ('Period ' + (c - 2));
+          periodInputsHtml += '<div><label for="finPeriod_'+c+'">'+escapeHtml(colName)+'</label><input class="input fin-period-input" id="finPeriod_'+c+'" type="number" min="0" data-col="'+c+'" placeholder="0" /></div>';
+        }
+        if (periodFieldsContainer) periodFieldsContainer.innerHTML = periodInputsHtml || '<p style="color:var(--muted);font-size:11px">No period columns defined.</p>';
+
+        var titleEl = document.getElementById('financeRecordTitle');
+        var cashierInput = document.getElementById('finCashierName');
+        var statusSelect = document.getElementById('finStatus');
+        var onHandInput = document.getElementById('finOnHand');
+
+        if (editingFinanceRowIndex >= 0 && rows[editingFinanceRowIndex]) {
+          if (titleEl) titleEl.textContent = 'Edit card audit entry';
+          var row = rows[editingFinanceRowIndex];
+          var name = row[1];
+          if (!name && editingFinanceRowIndex > 0) {
+            name = rows[editingFinanceRowIndex - 1][1] || '';
+          }
+          if (cashierInput) cashierInput.value = name;
+          if (statusSelect) statusSelect.value = (String(row[2] || '').toLowerCase() === 'corrupt') ? 'Corrupt' : 'Activate';
+          
+          for (var c = 3; c < totalIdx; c++) {
+            var inp = document.getElementById('finPeriod_' + c);
+            if (inp) inp.value = row[c] !== undefined && row[c] !== null ? row[c] : '';
+          }
+          if (onHandInput) onHandInput.value = row[onHandIdx] !== undefined && row[onHandIdx] !== null ? row[onHandIdx] : '';
+        } else {
+          if (titleEl) titleEl.textContent = 'Add card audit entry';
+          if (cashierInput) cashierInput.value = '';
+          if (statusSelect) statusSelect.value = 'Activate';
+          for (var c = 3; c < totalIdx; c++) {
+            var inp = document.getElementById('finPeriod_' + c);
+            if (inp) inp.value = '';
+          }
+          if (onHandInput) onHandInput.value = '';
+        }
+
+        recalculateFinanceTotal();
+
+        document.querySelectorAll('.fin-period-input').forEach(function(inp){
+          inp.addEventListener('input', recalculateFinanceTotal);
+        });
+
+        openModal('financeRecordModal');
+      }
+
+      function recalculateFinanceTotal() {
+        var sum = 0;
+        document.querySelectorAll('.fin-period-input').forEach(function(inp){
+          sum += numericValue(inp.value);
+        });
+        var totalEl = document.getElementById('finTotal');
+        if (totalEl) totalEl.value = sum;
+      }
+
+      async function saveFinanceRecord(event) {
+        event.preventDefault();
+        var headers = financeAudit.headers || defaultFinanceAudit.headers;
+        var rows = financeAudit.rows || [];
+        var totalIdx = headers.findIndex(function(h){return String(h).toLowerCase()==='total';});
+        var onHandIdx = headers.findIndex(function(h){return String(h).toLowerCase()==='on hand';});
+        if (totalIdx < 0) totalIdx = headers.length - 2;
+        if (onHandIdx < 0) onHandIdx = headers.length - 1;
+
+        var name = document.getElementById('finCashierName').value.trim();
+        var status = document.getElementById('finStatus').value;
+        var onHand = numericValue(document.getElementById('finOnHand').value);
+        var onHandRaw = document.getElementById('finOnHand').value === '' ? '' : onHand;
+
+        var periodValues = {};
+        for (var c = 3; c < totalIdx; c++) {
+          var inp = document.getElementById('finPeriod_' + c);
+          var val = inp ? (inp.value === '' ? 0 : numericValue(inp.value)) : 0;
+          periodValues[headers[c]] = val;
+        }
+
+        var payload = { cashierName: name, rowType: status, periodValues: periodValues, onHand: onHandRaw };
+        var submitBtn = event.target.querySelector('[type="submit"]');
+        if (submitBtn) submitBtn.disabled = true;
+
+        try {
+          var grid;
+          if (editingFinanceRowIndex >= 0 && financeAudit.recordIds && financeAudit.recordIds[editingFinanceRowIndex]) {
+            grid = await apiPut('/finance-audit/records/' + financeAudit.recordIds[editingFinanceRowIndex], payload);
+            showToast('Updated card audit entry for ' + name + ' (' + status + ').');
+          } else {
+            grid = await apiPost('/finance-audit/records', payload);
+            showToast('Added card audit entry for ' + name + ' (' + status + ').');
+          }
+          applyFinanceGrid(grid);
+          renderFinance();
+          closeModal('financeRecordModal');
+        } catch (err) {
+          showToast(err.message || "Couldn't save that card audit entry.");
+        } finally {
+          if (submitBtn) submitBtn.disabled = false;
+        }
+      }
+
+      async function deleteFinanceRecord(index) {
+        if (!confirm('Are you sure you want to delete this card audit record?')) return;
+        var recordId = financeAudit.recordIds && financeAudit.recordIds[index];
+        if (!recordId) return;
+        try {
+          await apiDelete('/finance-audit/records/' + recordId);
+          var grid = await apiGet('/finance-audit');
+          applyFinanceGrid(grid);
+          renderFinance();
+          showToast('Card audit record deleted.');
+        } catch (err) {
+          showToast(err.message || "Couldn't delete that record.");
+        }
+      }
+
+      async function addFinanceColumn(event) {
+        event.preventDefault();
+        var colName = document.getElementById('newColName').value.trim();
+        if (!colName) return;
+        try {
+          var grid = await apiPost('/finance-audit/columns', { label: colName });
+          applyFinanceGrid(grid);
+          renderFinance();
+          closeModal('financeColumnModal');
+          document.getElementById('newColName').value = '';
+          showToast('Added new column: "' + colName + '".');
+        } catch (err) {
+          showToast(err.message || "Couldn't add that column.");
+        }
+      }
+
+      function renderMaterials() {
+        var matEl = document.getElementById('materialRows');
+        var actionsCell = function(issue){
+          if (!canManageMaterials) return '';
+          return '<td style="text-align:right"><div style="display:inline-flex;gap:4px"><button class="action" data-edit-material="'+escapeHtml(issue.id)+'">Edit</button><button class="action" style="color:var(--red)" data-delete-material="'+escapeHtml(issue.id)+'">Delete</button></div></td>';
+        };
+        if(matEl) matEl.innerHTML=materialIssues.length?materialIssues.slice().reverse().map(function(issue){return '<tr><td>'+personCell(issue.cashier)+'</td><td>'+(issue.plateNo?'<span class="pos">'+escapeHtml(issue.plateNo)+'</span>':'<span class="cell-placeholder">—</span>')+'</td><td><span class="pos">'+escapeHtml(issue.material)+'</span></td><td>'+(issue.serialNo?escapeHtml(issue.serialNo):'<span class="cell-placeholder">—</span>')+'</td><td>'+escapeHtml(issue.quantity)+'</td><td>'+escapeHtml(issue.date)+'</td><td>'+escapeHtml(issue.notes||'—')+'</td>'+actionsCell(issue)+'</tr>';}).join(''):'<tr><td class="empty" colspan="'+(canManageMaterials?8:7)+'">No materials have been issued yet.</td></tr>';
+      }
+
+      function renderFleet() {
+        var searchEl = document.getElementById('fleetSearch');
+        var query = searchEl ? searchEl.value.trim().toLowerCase() : '';
+        var rows=fleet.filter(function(bus){
+          var matchesStatus=activeFilter==='all'||bus.status===activeFilter;
+          var haystack=[bus.plate,bus.side,bus.driver,bus.cashier,bus.pos].join(' ').toLowerCase();
+          return matchesStatus&&haystack.indexOf(query)!==-1;
+        });
+        var tbody=document.getElementById('fleetRows');
+        if(!tbody) return;
+        if(!rows.length){tbody.innerHTML='<tr><td colspan="6" class="empty">No vehicles match these filters.</td></tr>';return;}
+        tbody.innerHTML=rows.map(function(bus){
+          return '<tr><td><div class="bus-cell"><div class="vehicle-icon">▰</div><div>'+editableCell(bus,'plate')+'<span class="bus-sub">'+escapeHtml(bus.side)+' · '+escapeHtml(bus.type)+'</span></div></div></td><td>'+editableCell(bus,'driver')+'</td><td>'+editableCell(bus,'cashier')+'</td><td>'+editableCell(bus,'pos')+'</td><td>'+statusCellHtml(bus)+'</td><td><button class="action" data-clear="'+bus.id+'">Clear</button></td></tr>';
+        }).join('');
+      }
+
+      function personCell(name) { return name ? '<div class="person"><span class="mini-avatar">'+initials(name)+'</span><span>'+escapeHtml(name)+'</span></div>' : '<span style="color:#a0aaa7">Not assigned</span>'; }
+      function optionList(values, selected, blank) { var first=blank ? '<option value="">'+blank+'</option>' : ''; return first+values.map(function(value){return '<option value="'+escapeHtml(value)+'"'+(value===selected?' selected':'')+'>'+escapeHtml(value)+'</option>';}).join(''); }
+
+      // --- Inline, click-to-type editing for the fleet table (plate / driver / cashier / POS) ---
+      var fieldLabels = { plate:'plate number', driver:'driver', cashier:'cashier', pos:'POS' };
+      function personnelSuggestions(field) {
+        var p = personnel();
+        return field === 'driver' ? p.drivers : field === 'cashier' ? p.cashiers : p.pos;
+      }
+      function editableCell(bus, field) {
+        var value = bus[field] || '';
+        var display;
+        if (field === 'plate') {
+          display = '<span class="bus-name">'+escapeHtml(value)+'</span>';
+        } else if (field === 'pos') {
+          display = value ? '<span class="pos">'+escapeHtml(value)+'</span>' : '<span class="cell-placeholder">Add POS…</span>';
+        } else {
+          display = value
+            ? '<span class="mini-avatar">'+initials(value)+'</span><span class="cell-value">'+escapeHtml(value)+'</span>'
+            : '<span class="cell-placeholder">Add '+fieldLabels[field]+'…</span>';
+        }
+        return '<div class="editable-cell" data-field="'+field+'" data-id="'+bus.id+'" tabindex="0">'
+          + '<span class="cell-display">'+display+'</span><span class="edit-hint">✎ click to write</span>'
+          + '</div>';
+      }
+      function enterCellEdit(cellEl) {
+        if (cellEl.classList.contains('editing')) return;
+        var id = cellEl.dataset.id, field = cellEl.dataset.field;
+        var bus = fleet.find(function (item) { return item.id === id; });
+        if (!bus) return;
+        cellEl.classList.add('editing');
+        var current = bus[field] || '';
+        var listId = 'suggest-' + field + '-' + id;
+        var hasSuggestions = (field === 'driver' || field === 'cashier' || field === 'pos');
+        var options = hasSuggestions ? personnelSuggestions(field).map(function (v) { return '<option value="' + escapeHtml(v) + '">'; }).join('') : '';
+        cellEl.querySelector('.cell-display').outerHTML =
+          '<input class="cell-input" type="text" value="' + escapeHtml(current) + '"' + (hasSuggestions ? ' list="' + listId + '"' : '') + ' placeholder="Type a ' + fieldLabels[field] + '…" autocomplete="off">'
+          + (hasSuggestions ? '<datalist id="' + listId + '">' + options + '</datalist>' : '');
+        var input = cellEl.querySelector('input');
+        input.focus();
+        input.select();
+      }
+      function exitCellEdit(cellEl, bus, field) {
+        cellEl.classList.remove('editing');
+        var value = bus[field] || '';
+        var display;
+        if (field === 'plate') {
+          display = '<span class="bus-name">'+escapeHtml(value)+'</span>';
+        } else if (field === 'pos') {
+          display = value ? '<span class="pos">'+escapeHtml(value)+'</span>' : '<span class="cell-placeholder">Add POS…</span>';
+        } else {
+          display = value
+            ? '<span class="mini-avatar">'+initials(value)+'</span><span class="cell-value">'+escapeHtml(value)+'</span>'
+            : '<span class="cell-placeholder">Add '+fieldLabels[field]+'…</span>';
+        }
+        cellEl.innerHTML = '<span class="cell-display">'+display+'</span><span class="edit-hint">✎ click to write</span>';
+      }
+      async function commitCellEdit(cellEl, cancel) {
+        // Guard: exitCellEdit removes 'editing' as its first act, so if a
+        // stray/duplicate blur fires after we've already committed (or
+        // cancelled), this bails out instead of re-applying a stale value.
+        if (!cellEl.classList.contains('editing')) return;
+        var id = cellEl.dataset.id, field = cellEl.dataset.field;
+        var bus = fleet.find(function (item) { return item.id === id; });
+        var input = cellEl.querySelector('input');
+        if (!bus || !input) { cellEl.classList.remove('editing'); return; }
+        if (cancel) { exitCellEdit(cellEl, bus, field); return; }
+
+        var newVal = input.value.trim();
+        if (field === 'plate' && !newVal) {
+          showToast("Plate number can't be empty — keeping the old one.");
+          exitCellEdit(cellEl, bus, field);
+          return;
+        }
+        if (field === 'plate' && newVal !== bus.plate && fleet.some(function (b) { return b.id !== bus.id && b.plate === newVal; })) {
+          showToast('Another vehicle already uses plate ' + newVal + '.');
+          exitCellEdit(cellEl, bus, field);
+          return;
+        }
+        if (newVal === (bus[field] || '')) {
+          exitCellEdit(cellEl, bus, field);
+          return;
+        }
+
+        var previous = clone(bus);
+        var payload = {}; payload[field] = newVal;
+        if (field === 'driver' || field === 'cashier') {
+          var willDriver = field === 'driver' ? newVal : bus.driver;
+          var willCashier = field === 'cashier' ? newVal : bus.cashier;
+          if (!willDriver || !willCashier) payload.status = 'Unassigned';
+          else if (bus.status === 'Unassigned') payload.status = 'Active';
+        }
+
+        input.disabled = true;
+        try {
+          var updated = await apiPut('/fleet/' + bus.id, payload);
+          Object.assign(bus, updated);
+          showToast(bus.plate + ' ' + fieldLabels[field] + ' updated.');
+          renderStats();
+          renderDirectories();
+          var row = cellEl.closest('tr');
+          var statusSel = row ? row.querySelector('.status-select') : null;
+          if (statusSel) {
+            statusSel.value = bus.status;
+            statusSel.className = 'status-select ' + statusClass(bus.status);
+          }
+        } catch (err) {
+          Object.assign(bus, previous);
+          showToast(err.message || "Couldn't save that change.");
+        }
+        exitCellEdit(cellEl, bus, field);
+      }
+      function statusCellHtml(bus) {
+        var cls = statusClass(bus.status);
+        return '<select class="status-select ' + cls + '" data-status-id="' + bus.id + '">'
+          + ['Active', 'Idle', 'Unassigned'].map(function (s) { return '<option value="' + s + '"' + (s === bus.status ? ' selected' : '') + '>' + s + '</option>'; }).join('')
+          + '</select>';
+      }
+
+      function jumpToFleetAndEdit(id, field) {
+        showView('fleet', true);
+        renderFleet();
+        setTimeout(function () {
+          var cell = document.querySelector('.editable-cell[data-field="' + (field || 'driver') + '"][data-id="' + id + '"]');
+          if (cell) {
+            if (cell.scrollIntoView) cell.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            enterCellEdit(cell);
+          }
+        }, 60);
+      }
+
+      function openModal(id) { var el=document.getElementById(id); if(el) el.classList.add('open'); }
+      function closeModal(id) { var el=document.getElementById(id); if(el) el.classList.remove('open'); }
+
+
+      function showToast(message) {
+        var toast=document.getElementById('toast');
+        if(!toast) return;
+        toast.textContent=message;
+        toast.classList.add('show');
+        window.clearTimeout(showToast.timer);
+        showToast.timer=window.setTimeout(function(){toast.classList.remove('show');},3200);
+      }
+
+      function parseCsv(text) {
+        var result=[], row=[], value='', quoted=false;
+        for(var i=0;i<text.length;i++){
+          var c=text.charAt(i), next=text.charAt(i+1);
+          if(c==='"'&&quoted&&next==='"'){value+='"';i++;}
+          else if(c==='"'){quoted=!quoted;}
+          else if(c===','&&!quoted){row.push(value.trim());value='';}
+          else if((c==='\n'||c==='\r')&&!quoted){
+            if(c==='\r'&&next==='\n')i++;
+            row.push(value.trim());
+            if(row.some(function(v){return v!=='';}))result.push(row);
+            row=[];value='';
+          } else {value+=c;}
+        }
+        row.push(value.trim());
+        if(row.some(function(v){return v!=='';}))result.push(row);
+        return result;
+      }
+
+      function readFile(file) {
+        if(!file)return;
+        if(file.size>5*1024*1024){showToast('Please choose a file smaller than 5 MB.');return;}
+        var reader=new FileReader();
+        reader.onload=function(event){
+          try{
+            var grid;
+            if(/\.csv$/i.test(file.name)){grid=parseCsv(event.target.result);}
+            else{
+              if(typeof XLSX==='undefined')throw new Error('Spreadsheet reader is still loading. Please try again shortly.');
+              var book=XLSX.read(event.target.result,{type:'array'});
+              grid=XLSX.utils.sheet_to_json(book.Sheets[book.SheetNames[0]],{header:1,defval:''});
+            }
+            setupImport(grid,file.name);
+          }catch(error){showToast(error.message||'We could not read that file.');}
+        };
+        if(/\.csv$/i.test(file.name))reader.readAsText(file);else reader.readAsArrayBuffer(file);
+      }
+
+      function downloadCsv(filename,grid) {
+        var csv=grid.map(function(row){return row.map(function(value){return '"'+String(value===undefined||value===null?'':value).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
+        var csvUrl=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+        var csvLink=document.createElement('a');
+        csvLink.href=csvUrl; csvLink.download=filename; csvLink.click();
+        setTimeout(function(){URL.revokeObjectURL(csvUrl);},1000);
+      }
+
+      async function importFinanceGrid(grid,fileName) {
+        if(!grid||grid.length<2){showToast('The card audit file needs headers and at least one record.');return;}
+        var headers=grid[0].slice(0,10).map(function(header,index){return String(header||defaultFinanceAudit.headers[index]||('Column '+(index+1))).trim();});
+        var nameIndex=headers.findIndex(function(header){return header.toLowerCase()==='name';});
+        var statusIndex=headers.findIndex(function(header){return header.toLowerCase()==='status';});
+        if(nameIndex<0||statusIndex<0){showToast('This file must include Name and Status columns like the card audit template.');return;}
+        var records=grid.slice(1).filter(function(row){return row.some(function(value){return String(value===undefined||value===null?'':value).trim()!=='';});}).map(function(row){var record=[];for(var index=0;index<headers.length;index++)record.push(row[index]===undefined||row[index]===null?'':row[index]);if(!numericValue(record[8]))record[8]=record.slice(3,8).reduce(function(sum,value){return sum+numericValue(value);},0);return record;});
+        try {
+          var result = await apiPost('/finance-audit/import', { headers: headers, rows: records });
+          applyFinanceGrid(result);
+          renderFinance();
+          var statusEl = document.getElementById('financeImportStatus'); if(statusEl) statusEl.textContent=fileName+' imported · '+records.length+' card audit record'+(records.length===1?'':'s')+'.';
+          showToast('Card audit Excel data imported to Supabase.');
+        } catch (err) {
+          showToast(err.message || "Couldn't import that file.");
+        }
+      }
+
+      function readFinanceFile(file) {
+        if(!file)return;
+        var reader=new FileReader();
+        reader.onload=function(event){
+          try{
+            var grid;
+            if(/\.csv$/i.test(file.name)){grid=parseCsv(event.target.result);}
+            else{
+              if(typeof XLSX==='undefined')throw new Error('Spreadsheet reader is still loading. Please try again shortly.');
+              var workbook=XLSX.read(event.target.result,{type:'array'});
+              grid=XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]],{header:1,defval:'',raw:false});
+            }
+            importFinanceGrid(grid,file.name);
+          }catch(error){showToast(error.message||'We could not read that finance audit file.');}
+        };
+        if(/\.csv$/i.test(file.name))reader.readAsText(file);else reader.readAsArrayBuffer(file);
+      }
+
+      function exportFinanceAudit() {
+        var grid=[financeAudit.headers].concat(financeAudit.rows);
+        if(typeof XLSX==='undefined'){downloadCsv('menged-card-finance-audit.csv',grid);showToast('Card audit exported as CSV.');return;}
+        var worksheet=XLSX.utils.aoa_to_sheet(grid);
+        worksheet['!cols']=financeAudit.headers.map(function(header,index){return {wch:index===1?24:(index===2?12:14)};});
+        var workbook=XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook,worksheet,'Card Audit');
+        XLSX.writeFile(workbook,'menged-card-finance-audit.xlsx');
+        showToast('Card audit exported to Excel.');
+      }
+
+      function exportMaterials() {
+        var grid=[['IT Technician','Plate No.','Material','Quantity','Issue date','Notes']].concat(materialIssues.map(function(issue){return [issue.cashier,issue.plateNo||'',issue.material,issue.quantity,issue.date,issue.notes];}));
+        downloadCsv('menged-technician-material-issues.csv',grid);
+        showToast('IT technician material issues exported.');
+      }
+
+      function openMaterialIssue(materialId) {
+        editingMaterialId = materialId || null;
+        // Populate technician datalist sorted A-Z (material is issued to an
+        // IT technician, so suggest from the technician roster, not cashiers)
+        var cashierList = document.getElementById('materialCashierList');
+        if (cashierList) {
+          var sorted = defaultTechnicians.map(function(t){ return t.name; }).sort(function(a,b){ return a.localeCompare(b); });
+          cashierList.innerHTML = sorted.map(function(c){
+            return '<option value="'+escapeHtml(c)+'">';
+          }).join('');
+        }
+        // Populate plate datalist sorted by plate
+        var plateList = document.getElementById('materialPlateList');
+        if (plateList) {
+          var sortedVehicles = fleet.slice().sort(function(a,b){ return a.plate.localeCompare(b.plate); });
+          plateList.innerHTML = sortedVehicles.map(function(b){
+            return '<option value="'+escapeHtml(b.plate)+'" label="'+escapeHtml(b.plate+' · '+b.side)+'">';
+          }).join('');
+        }
+        var cashierInp = document.getElementById('materialCashierInput');
+        var plateInp = document.getElementById('materialPlateInput');
+        var typeInp = document.getElementById('materialTypeInput');
+        var dateInput = document.getElementById('materialDate');
+        var serialInp = document.getElementById('materialSerial');
+        var notesInp = document.getElementById('materialNotes');
+        var qtyInp = document.getElementById('materialQuantity');
+        var titleEl = document.getElementById('materialTitle');
+        var subtitleEl = document.getElementById('materialSubtitle');
+        var issue = editingMaterialId ? materialIssues.find(function(m){ return m.id === editingMaterialId; }) : null;
+        if (issue) {
+          if (titleEl) titleEl.textContent = 'Edit material issue';
+          if (subtitleEl) subtitleEl.textContent = 'Update the equipment record for this IT technician.';
+          if (cashierInp) cashierInp.value = issue.cashier || '';
+          if (plateInp) plateInp.value = issue.plateNo || '';
+          if (typeInp) typeInp.value = issue.material || '';
+          if (qtyInp) qtyInp.value = issue.quantity || 1;
+          if (dateInput) dateInput.value = issue.date || new Date().toISOString().slice(0,10);
+          if (serialInp) serialInp.value = issue.serialNo || '';
+          if (notesInp) notesInp.value = issue.notes || '';
+        } else {
+          if (titleEl) titleEl.textContent = 'Issue material to IT technician';
+          if (subtitleEl) subtitleEl.textContent = 'Record equipment provided to an IT technician, such as a cable or charger.';
+          if (cashierInp) cashierInp.value = '';
+          if (plateInp) plateInp.value = '';
+          if (typeInp) typeInp.value = '';
+          if (qtyInp) qtyInp.value = 1;
+          if (dateInput) dateInput.value = new Date().toISOString().slice(0,10);
+          if (serialInp) serialInp.value = '';
+          if (notesInp) notesInp.value = '';
+        }
+        openModal('materialModal');
+        setTimeout(function(){ if (cashierInp) cashierInp.focus(); }, 120);
+      }
+
+      function setupImport(grid,fileName) {
+        if(!grid||grid.length<2){showToast('Your file needs a header row and at least one data row.');return;}
+        importState.headers=grid[0].map(function(h,i){return String(h||'Column '+(i+1)).trim();});
+        importState.rows=grid.slice(1).filter(function(row){return row.some(function(v){return String(v).trim()!=='';});});
+        importState.fileName=fileName;
+        importState.mapping={};
+        fields.forEach(function(field){
+          var matched=importState.headers.find(function(header){return field.aliases.indexOf(header.toLowerCase().trim())!==-1;});
+          importState.mapping[field.key]=matched||'';
+        });
+        var fnEl = document.getElementById('fileName'); if(fnEl) fnEl.textContent=fileName;
+        var ftEl = document.getElementById('fileType'); if(ftEl) ftEl.textContent=fileName.split('.').pop().toUpperCase();
+        var fiEl = document.getElementById('fileInfo'); if(fiEl) fiEl.textContent=importState.rows.length+' data row'+(importState.rows.length===1?'':'s')+' detected';
+        var iwEl = document.getElementById('importWorkflow'); if(iwEl) iwEl.classList.add('ready');
+        var dzEl = document.getElementById('dropzone'); if(dzEl) dzEl.style.display='none';
+        renderMapping();
+        validateImport();
+      }
+
+      function renderMapping() {
+        var target=document.getElementById('mappingControls');
+        if(!target) return;
+        target.innerHTML=fields.map(function(field){
+          return '<div><label>'+field.label+(field.required?' *':'')+'</label><select data-map="'+field.key+'"><option value="">Do not import</option>'+importState.headers.map(function(header){return '<option value="'+escapeHtml(header)+'"'+(importState.mapping[field.key]===header?' selected':'')+'>'+escapeHtml(header)+'</option>';}).join('')+'</select></div>';
+        }).join('');
+        target.querySelectorAll('select').forEach(function(select){
+          select.addEventListener('change',function(){
+            importState.mapping[select.dataset.map]=select.value;
+            validateImport();
+          });
+        });
+      }
+
+      function mappedObjects() {
+        return importState.rows.map(function(row,index){
+          var obj={source:index+2};
+          fields.forEach(function(field){
+            var header=importState.mapping[field.key];
+            var headerIndex=importState.headers.indexOf(header);
+            obj[field.key]=headerIndex>-1?String(row[headerIndex]||'').trim():'';
+          });
+          return obj;
+        });
+      }
+
+      function validateImport() {
+        var data=mappedObjects();
+        var problems=[];
+        if(!importState.mapping.plate){problems.push('Map a column to Plate number before importing.');}
+        var seen={};
+        data.forEach(function(row){
+          if(!row.plate){problems.push('Row '+row.source+' has no plate number.');return;}
+          var normalized=row.plate.toLowerCase();
+          if(seen[normalized])problems.push('Plate '+row.plate+' appears more than once in this file.');
+          seen[normalized]=true;
+          if(fleet.some(function(bus){return bus.plate.toLowerCase()===normalized;}))problems.push('Plate '+row.plate+' already exists in the fleet.');
+        });
+        var message=document.getElementById('validationMessage');
+        var button=document.getElementById('importRecords');
+        if(problems.length){
+          if(message){message.className='validation bad';message.textContent=problems.slice(0,3).join(' ') + (problems.length>3?' +'+(problems.length-3)+' more issue(s).':'');}
+          if(button) button.disabled=true;
+        }else{
+          if(message){message.className='validation good';message.textContent='Ready to import '+data.length+' vehicle'+(data.length===1?'s':'. Driver, cashier, POS, and route names will be linked or created automatically.');}
+          if(button) button.disabled=!data.length;
+        }
+        renderPreview(data);
+      }
+
+      function renderPreview(data) {
+        var visible=fields.filter(function(field){return importState.mapping[field.key];});
+        var ph = document.getElementById('previewHead'); if(ph) ph.innerHTML='<tr>'+visible.map(function(field){return '<th>'+field.label+'</th>';}).join('')+'</tr>';
+        var pb = document.getElementById('previewBody'); if(pb) pb.innerHTML=data.slice(0,5).map(function(row){return '<tr>'+visible.map(function(field){return '<td>'+escapeHtml(row[field.key]||'—')+'</td>';}).join('')+'</tr>';}).join('');
+      }
+
+      async function importRecords() {
+        var rows=mappedObjects();
+        if(!rows.length)return;
+        var records=rows.map(function(row){return {plate:row.plate,side:row.side||'—',type:row.type||'Bus',driver:row.driver||'',cashier:row.cashier||'',pos:row.pos||'',status:row.driver&&row.cashier?'Active':'Unassigned'};});
+        var button=document.getElementById('importRecords');
+        if(button) button.disabled=true;
+        try {
+          var result = await apiPost('/fleet/import', { records: records });
+          fleet = await apiGet('/fleet');
+          renderAll();
+          closeModal('importModal');
+          showToast(result.imported+' vehicle'+(result.imported===1?' was':'s were')+' added to the fleet.');
+          resetImport();
+        } catch (err) {
+          showToast(err.message || "Couldn't import those vehicles.");
+        } finally {
+          if(button) button.disabled=false;
+        }
+      }
+
+      function resetImport() {
+        importState={headers:[],rows:[],mapping:{},fileName:''};
+        var fi = document.getElementById('fileInput'); if(fi) fi.value='';
+        var dz = document.getElementById('dropzone'); if(dz) dz.style.display='block';
+        var iw = document.getElementById('importWorkflow'); if(iw) iw.classList.remove('ready');
+        var ir = document.getElementById('importRecords'); if(ir) ir.disabled=true;
+      }
+
+      function renderAll(){
+        renderStats();
+        renderFleet();
+        renderDirectories();
+        renderFinance();
+        renderMaterials();
+        renderTasks();
+        renderUsers();
+      }
+
+      // Views Navigation and Breadcrumb updating
+      var breadcrumbs = {
+        dashboard: { category: 'Operations', title: 'Fleet overview' },
+        fleet: { category: 'Operations', title: 'Fleet management' },
+        cashiers: { category: 'Operations', title: 'Cashier roster' },
+        'issue-material': { category: 'Operations', title: 'Material issuance' },
+        tasks: { category: 'Operations', title: 'Technical tasks & hardware work orders' },
+        reports: { category: 'Operations', title: 'Operational summary' },
+        finance: { category: 'Operations', title: 'Card finance audit' },
+        users: { category: 'Manage', title: 'User accounts & roles' },
+        settings: { category: 'Manage', title: 'System settings' }
+      };
+
+      function defaultPanel() { return isReports ? 'reports' : 'dashboard'; }
+
+      function showView(panel, updateHash) {
+        if (!document.querySelector('[data-view-panel="' + panel + '"]')) panel = defaultPanel();
+        if (panel === 'users' && !isAdmin) panel = defaultPanel();
+        if (isReports && REPORTS_ROLE_PANELS.indexOf(panel) === -1) panel = 'reports';
+        document.querySelectorAll('[data-view-panel]').forEach(function (view) {
+          view.classList.toggle('active', view.dataset.viewPanel === panel);
+        });
+        document.querySelectorAll('.nav a[data-nav]').forEach(function (link) {
+          link.classList.toggle('active', link.dataset.nav === panel);
+        });
+        
+        var crumbEl = document.getElementById('topbarCrumb');
+        if (crumbEl && breadcrumbs[panel]) {
+          crumbEl.innerHTML = escapeHtml(breadcrumbs[panel].category) + ' <span style="padding:0 7px">/</span> <b>' + escapeHtml(breadcrumbs[panel].title) + '</b>';
+        }
+        
+        if (updateHash && window.location.hash !== ('#' + panel)) window.location.hash = panel;
+        window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+      }
+
+      // Safe Event Listeners Registration
+      bindEvent('downloadSource', 'click', downloadHtmlSource);
+      bindEvent('logoutBtn', 'click', function () {
+        if (confirm('Sign out of Menged?')) goToLogin();
+      });
+      bindEvent('fleetSearch', 'input', renderFleet);
+
+      document.querySelectorAll('.tab').forEach(function (tab) {
+        tab.addEventListener('click', function () {
+          document.querySelectorAll('.tab').forEach(function (item) { item.classList.remove('active'); });
+          tab.classList.add('active');
+          activeFilter = tab.dataset.status;
+          renderFleet();
+        });
+      });
+
+      bindEvent('fleetRows', 'click', function (event) {
+        var cell = event.target.closest && event.target.closest('.editable-cell');
+        if (cell) { enterCellEdit(cell); return; }
+        var clearId = event.target.dataset.clear;
+        if (clearId) {
+          var bus = fleet.find(function (item) { return item.id === clearId; });
+          if (bus) {
+            var previous = clone(bus);
+            var btn = event.target;
+            btn.disabled = true;
+            apiPut('/fleet/' + bus.id, { driver: '', cashier: '', pos: '', status: 'Unassigned' })
+              .then(function (updated) {
+                Object.assign(bus, updated);
+                renderAll();
+                showToast(bus.plate + ' assignment cleared.');
+              })
+              .catch(function (err) {
+                Object.assign(bus, previous);
+                showToast(err.message || "Couldn't clear that vehicle.");
+              })
+              .finally(function () { btn.disabled = false; });
+          }
+        }
+      });
+
+      (function () {
+        var fleetRowsEl = document.getElementById('fleetRows');
+        if (!fleetRowsEl) return;
+        fleetRowsEl.addEventListener('focusout', function (event) {
+          var cell = event.target.closest && event.target.closest('.editable-cell');
+          if (cell) commitCellEdit(cell, false);
+        });
+        fleetRowsEl.addEventListener('keydown', function (event) {
+          var cell = event.target.closest && event.target.closest('.editable-cell');
+          if (!cell) return;
+          if (event.key === 'Enter') { event.preventDefault(); commitCellEdit(cell, false); }
+          else if (event.key === 'Escape') { event.preventDefault(); commitCellEdit(cell, true); }
+        });
+        fleetRowsEl.addEventListener('change', function (event) {
+          var sel = event.target.closest && event.target.closest('.status-select');
+          if (!sel) return;
+          var id = sel.dataset.statusId;
+          var bus = fleet.find(function (item) { return item.id === id; });
+          if (!bus) return;
+          var previousStatus = bus.status;
+          sel.disabled = true;
+          apiPut('/fleet/' + id, { status: sel.value })
+            .then(function (updated) {
+              Object.assign(bus, updated);
+              sel.className = 'status-select ' + statusClass(bus.status);
+              renderStats();
+              renderDirectories();
+              showToast(bus.plate + ' status set to ' + bus.status + '.');
+            })
+            .catch(function (err) {
+              bus.status = previousStatus;
+              sel.value = previousStatus;
+              showToast(err.message || "Couldn't update status.");
+            })
+            .finally(function () { sel.disabled = false; });
+        });
+      })();
+
+      bindEvent('newAssignment', 'click', function () {
+        var target = fleet.find(function (b) { return b.status === 'Unassigned'; }) || fleet[0];
+        if (!target) { showToast('Import a vehicle before creating an assignment.'); return; }
+        var field = !target.driver ? 'driver' : !target.cashier ? 'cashier' : 'pos';
+        jumpToFleetAndEdit(target.id, field);
+      });
+
+      document.querySelectorAll('[data-close]').forEach(function (button) {
+        button.addEventListener('click', function () { closeModal(button.dataset.close); });
+      });
+
+      document.querySelectorAll('.modal-backdrop').forEach(function (backdrop) {
+        backdrop.addEventListener('click', function (event) {
+          if (event.target === backdrop) closeModal(backdrop.id);
+        });
+      });
+
+      // Data Workspace Sidebar & Topbar Actions
+      bindEvent('openImport', 'click', function () { openModal('importModal'); });
+      bindEvent('sideImport', 'click', function () { openModal('importModal'); });
+      bindEvent('browseFile', 'click', function () { var fi = document.getElementById('fileInput'); if(fi) fi.click(); });
+      bindEvent('changeFile', 'click', resetImport);
+      bindEvent('fileInput', 'change', function (event) { readFile(event.target.files[0]); });
+      bindEvent('importRecords', 'click', importRecords);
+
+      var dropzone = document.getElementById('dropzone');
+      if (dropzone) {
+        ['dragenter', 'dragover'].forEach(function (type) {
+          dropzone.addEventListener(type, function (event) { event.preventDefault(); dropzone.classList.add('drag'); });
+        });
+        ['dragleave', 'drop'].forEach(function (type) {
+          dropzone.addEventListener(type, function (event) { event.preventDefault(); dropzone.classList.remove('drag'); });
+        });
+        dropzone.addEventListener('drop', function (event) { readFile(event.dataTransfer.files[0]); });
+      }
+
+      // Attention Queue & Navigation Shortcuts
+      bindEvent('reviewQueue', 'click', function () {
+        activeFilter = 'Unassigned';
+        document.querySelectorAll('.tab').forEach(function (item) { item.classList.toggle('active', item.dataset.status === 'Unassigned'); });
+        showView('fleet', true);
+        renderFleet();
+      });
+
+      bindEvent('openReportLink', 'click', function () { showView('reports', true); });
+
+      document.querySelectorAll('.queue-row').forEach(function(row, idx) {
+        row.style.cursor = 'pointer';
+        row.addEventListener('click', function() {
+          if (idx === 0) {
+            jumpToFleetAndEdit('b1', 'cashier');
+          } else if (idx === 1) {
+            jumpToFleetAndEdit('b1', 'pos');
+          } else {
+            activeFilter = 'Idle';
+            document.querySelectorAll('.tab').forEach(function (item) { item.classList.toggle('active', item.dataset.status === 'Idle'); });
+            showView('fleet', true);
+            renderFleet();
+          }
+        });
+      });
+
+      bindEvent('openCashierAssignments', 'click', function () { showView('tasks', true); });
+
+      bindEvent('generateReport', 'click', function () {
+        var report = 'Fleet operations summary\nGenerated,' + new Date().toLocaleString() + '\n\nPlate,Side,Driver,Cashier,POS,Status\n' + fleet.map(function (bus) {
+          return [bus.plate, bus.side, bus.driver, bus.cashier, bus.pos, bus.status].map(function (value) {
+            return '"' + String(value || '').replace(/"/g, '""') + '"';
+          }).join(',');
+        }).join('\n');
+        var reportUrl = URL.createObjectURL(new Blob([report], { type: 'text/csv' }));
+        var reportLink = document.createElement('a');
+        reportLink.href = reportUrl;
+        reportLink.download = 'menged-fleet-summary.csv';
+        reportLink.click();
+        setTimeout(function () { URL.revokeObjectURL(reportUrl); }, 1000);
+        showToast('Fleet summary downloaded.');
+      });
+
+      document.querySelectorAll('.switch').forEach(function (control) {
+        control.addEventListener('change', function () {
+          var labelText = control.parentElement ? control.parentElement.querySelector('b').textContent : 'Setting';
+          showToast((control.checked ? 'Enabled ' : 'Disabled ') + labelText + '.');
+        });
+      });
+
+      document.querySelectorAll('.nav a[data-nav]').forEach(function (link) {
+        link.addEventListener('click', function (event) {
+          event.preventDefault();
+          showView(link.dataset.nav, true);
+        });
+      });
+
+      window.addEventListener('hashchange', function () {
+        showView(window.location.hash.replace('#', '') || defaultPanel(), false);
+      });
+
+      bindEvent('saveData', 'click', saveAllData);
+      bindEvent('sideSave', 'click', saveAllData);
+      bindEvent('exportData', 'click', exportAllData);
+      bindEvent('sideExport', 'click', exportAllData);
+      bindEvent('openHelpModal', 'click', function() { openModal('helpModal'); });
+      bindEvent('openNoticeModal', 'click', function() { openModal('noticeModal'); });
+      bindEvent('logoutBtn', 'click', function() { openModal('logoutConfirmModal'); });
+      bindEvent('confirmLogoutBtn', 'click', function() {
+        closeModal('logoutConfirmModal');
+        showToast('Signing out...');
+        setTimeout(function() {
+          goToLogin();
+        }, 350);
+      });
+      
+      var userEl = document.querySelector('.user');
+      if (userEl) {
+        userEl.style.cursor = 'pointer';
+        userEl.addEventListener('click', function() {
+          showToast('Signed in as ' + (currentUser ? (currentUser.name || currentUser.email) : 'Eyob A.'));
+        });
+      }
+
+      // Finance Audit Actions
+      bindEvent('openFinanceRecordModal', 'click', function() { openFinanceRecord(-1); });
+      bindEvent('openFinanceColModal', 'click', function() { openModal('financeColumnModal'); });
+      bindEvent('financeRecordForm', 'submit', saveFinanceRecord);
+      bindEvent('financeColumnForm', 'submit', addFinanceColumn);
+
+      bindEvent('financeRows', 'click', function (event) {
+        var editIdx = event.target.dataset.editFinance;
+        if (editIdx !== undefined) {
+          openFinanceRecord(parseInt(editIdx, 10));
+          return;
+        }
+        var delIdx = event.target.dataset.deleteFinance;
+        if (delIdx !== undefined) {
+          deleteFinanceRecord(parseInt(delIdx, 10));
+          return;
+        }
+      });
+
+      bindEvent('financeRows', 'dblclick', function (event) {
+        var tr = event.target.closest('tr');
+        if (tr && tr.dataset.rowIdx !== undefined) {
+          openFinanceRecord(parseInt(tr.dataset.rowIdx, 10));
+        }
+      });
+
+      bindEvent('openAuditorModal', 'click', function () { openModal('auditorModal'); });
+
+      bindEvent('auditorForm', 'submit', async function (event) {
+        event.preventDefault();
+        var submitBtn = event.target.querySelector('[type="submit"]');
+        if (submitBtn) submitBtn.disabled = true;
+        try {
+          var created = await apiPost('/auditors', {
+            name: document.getElementById('auditorName').value.trim(),
+            employeeId: document.getElementById('auditorId').value.trim(),
+            phone: document.getElementById('auditorPhone').value.trim(),
+            status: document.getElementById('auditorStatus').value
+          });
+          auditors.push(created);
+          renderFinance();
+          closeModal('auditorModal');
+          event.target.reset();
+          showToast('Finance auditor saved.');
+        } catch (err) {
+          showToast(err.message || "Couldn't save that auditor.");
+        } finally {
+          if (submitBtn) submitBtn.disabled = false;
+        }
+      });
+
+      bindEvent('resetData', 'click', async function () {
+        activeFilter = 'all';
+        var searchEl = document.getElementById('fleetSearch'); if (searchEl) searchEl.value = '';
+        document.querySelectorAll('.tab').forEach(function (item) { item.classList.toggle('active', item.dataset.status === 'all'); });
+        showToast('Reloading from Menged Cloud…');
+        try {
+          await loadAllData();
+          renderAll();
+          showToast('Reloaded the latest data from Supabase.');
+        } catch (err) {
+          showToast(err.message || "Couldn't reload right now.");
+        }
+      });
+
+      bindEvent('uploadFinanceAudit', 'click', function () { var fi = document.getElementById('financeFileInput'); if(fi) fi.click(); });
+      bindEvent('financeFileInput', 'change', function (event) { readFinanceFile(event.target.files[0]); event.target.value = ''; });
+      bindEvent('exportFinanceAudit', 'click', exportFinanceAudit);
+      bindEvent('openMaterialModal', 'click', function () { openMaterialIssue(); });
+      bindEvent('exportMaterials', 'click', exportMaterials);
+
+      bindEvent('materialForm', 'submit', async function (event) {
+        event.preventDefault();
+        var submitBtn = event.target.querySelector('[type="submit"]');
+        if (submitBtn) submitBtn.disabled = true;
+        var cashierVal = (document.getElementById('materialCashierInput') || {}).value || '';
+        var plateVal = (document.getElementById('materialPlateInput') || {}).value || '';
+        var materialVal = (document.getElementById('materialTypeInput') || {}).value || '';
+        if (!cashierVal.trim()) { showToast('Please enter or select an IT technician name.'); if(submitBtn) submitBtn.disabled=false; return; }
+        if (!materialVal.trim()) { showToast('Please enter the material type.'); if(submitBtn) submitBtn.disabled=false; return; }
+        var payload = {
+          cashier: cashierVal.trim(),
+          plateNo: plateVal.trim(),
+          material: materialVal.trim(),
+          quantity: document.getElementById('materialQuantity').value,
+          date: document.getElementById('materialDate').value,
+          notes: document.getElementById('materialNotes').value.trim(),
+          serialNo: document.getElementById('materialSerial').value.trim()
+        };
+        try {
+          if (editingMaterialId) {
+            var updated = await apiPut('/materials/' + editingMaterialId, payload);
+            var idx = materialIssues.findIndex(function(m){ return m.id === editingMaterialId; });
+            if (idx !== -1) materialIssues[idx] = updated;
+            showToast('Material issue updated for ' + updated.cashier + '.');
+          } else {
+            var created = await apiPost('/materials', payload);
+            materialIssues.push(created);
+            showToast('Material issue saved for ' + created.cashier + '.');
+          }
+          renderMaterials();
+          closeModal('materialModal');
+          event.target.reset();
+          editingMaterialId = null;
+        } catch (err) {
+          showToast(err.message || "Couldn't save that material issue.");
+        } finally {
+          if (submitBtn) submitBtn.disabled = false;
+        }
+      });
+
+      // ------------------------------------------------------------------
+      // Technical Tasks & Cashier Material Replacement Management
+      // ------------------------------------------------------------------
+      function priorityClass(priority) {
+        var p = String(priority || '').toLowerCase();
+        if (p === 'urgent') return 'priority-urgent';
+        if (p === 'high') return 'priority-high';
+        return 'priority-normal';
+      }
+
+      function taskStatusClass(status) {
+        var s = String(status || '').toLowerCase();
+        if (s === 'completed') return 'status-completed';
+        if (s === 'in progress') return 'status-progress';
+        return 'status-pending';
+      }
+
+      function renderTasks() {
+        var searchEl = document.getElementById('taskSearch');
+        var query = searchEl ? searchEl.value.trim().toLowerCase() : '';
+        
+        var filtered = tasks.filter(function (t) {
+          var matchesTab = activeTaskFilter === 'all' || t.status === activeTaskFilter;
+          var haystack = [t.taskCode, t.title, t.cashier, t.vehicle, t.material, t.technician, t.priority, t.status, t.notes].join(' ').toLowerCase();
+          return matchesTab && (query === '' || haystack.indexOf(query) !== -1);
+        });
+
+        // Counters
+        var pendingCount = tasks.filter(function(t){ return t.status === 'Pending'; }).length;
+        var progressCount = tasks.filter(function(t){ return t.status === 'In Progress'; }).length;
+        var completedCount = tasks.filter(function(t){ return t.status === 'Completed'; }).length;
+
+        var elTotal = document.getElementById('taskTotalCount'); if (elTotal) elTotal.textContent = tasks.length;
+        var elProg = document.getElementById('taskProgressCount'); if (elProg) elProg.textContent = progressCount;
+        var elPend = document.getElementById('taskPendingCount'); if (elPend) elPend.textContent = pendingCount;
+        var elComp = document.getElementById('taskCompletedCount'); if (elComp) elComp.textContent = completedCount;
+        var elBadge = document.getElementById('taskPendingBadge'); if (elBadge) elBadge.textContent = pendingCount;
+
+        var tbody = document.getElementById('taskRows');
+        if (tbody) {
+          if (!filtered.length) {
+            tbody.innerHTML = '<tr><td colspan="9" class="empty">No technical tasks found. Click "＋ Create task" to issue a material change work order.</td></tr>';
+          } else {
+            tbody.innerHTML = filtered.map(function (task) {
+              return '<tr data-task-id="' + escapeHtml(task.id) + '">'
+                + '<td><span class="ticket-badge">' + escapeHtml(task.taskCode) + '</span></td>'
+                + '<td><b>' + escapeHtml(task.title) + '</b>' + (task.notes ? '<span class="bus-sub">' + escapeHtml(task.notes) + '</span>' : '') + '</td>'
+                + '<td><div class="person"><span class="mini-avatar">' + initials(task.cashier) + '</span><div><b>' + escapeHtml(task.cashier) + '</b><span class="bus-sub">' + escapeHtml(task.vehicle || 'Stationary / Terminal') + '</span></div></div></td>'
+                + '<td><span class="pos">' + escapeHtml(task.material) + '</span></td>'
+                + '<td><div class="tech-tag"><span class="mini-avatar" style="background:#e0f2fe;color:#0369a1">' + initials(task.technician) + '</span><span>' + escapeHtml(task.technician) + '</span></div></td>'
+                + '<td><span class="priority-pill ' + priorityClass(task.priority) + '">' + escapeHtml(task.priority) + '</span></td>'
+                + '<td>'
+                +   '<select class="task-status-select ' + taskStatusClass(task.status) + '" data-task-status-id="' + escapeHtml(task.id) + '">'
+                +     ['Pending', 'In Progress', 'Completed'].map(function(s){ return '<option value="' + s + '"' + (s === task.status ? ' selected' : '') + '>' + s + '</option>'; }).join('')
+                +   '</select>'
+                + '</td>'
+                + '<td><span style="font-size:11px;color:var(--muted)">' + escapeHtml(task.dueDate || '—') + '</span></td>'
+                + '<td style="text-align:right"><div style="display:inline-flex;gap:4px"><button class="action" data-edit-task="' + escapeHtml(task.id) + '">Edit</button><button class="action" style="color:var(--red)" data-delete-task="' + escapeHtml(task.id) + '">Delete</button></div></td>'
+                + '</tr>';
+            }).join('');
+          }
+        }
+
+        // Technicians directory
+        var techDir = document.getElementById('technicianDirectory');
+        if (techDir) {
+          techDir.innerHTML = defaultTechnicians.map(function (tech) {
+            var activeAssigned = tasks.filter(function (t) { return t.technician.indexOf(tech.name) !== -1 && t.status !== 'Completed'; });
+            var countLabel = activeAssigned.length ? activeAssigned.length + ' active task' + (activeAssigned.length === 1 ? '' : 's') : 'Available / Ready';
+            return '<div class="directory-row">'
+              + '<span class="mini-avatar" style="background:#e2f5ee;color:#08786e">' + initials(tech.name) + '</span>'
+              + '<div class="directory-name"><b>' + escapeHtml(tech.name) + '</b><span>' + escapeHtml(tech.role) + ' · ' + escapeHtml(tech.phone) + '</span></div>'
+              + '<span class="directory-count" style="' + (activeAssigned.length ? 'background:#fff7ed;color:#c2410c;' : '') + '">' + countLabel + '</span>'
+              + '</div>';
+          }).join('');
+        }
+      }
+
+      function roleClass(role) {
+        if (role === 'admin') return 'active-status';
+        if (role === 'reception') return 'idle-status';
+        if (role === 'reports') return 'unassigned-status';
+        return 'idle-status';
+      }
+      function statusPillClass(status) { return status === 'Active' ? 'active-status' : 'unassigned-status'; }
+
+      function renderUsers() {
+        var tbody = document.getElementById('userRows');
+        if (!tbody) return;
+        if (!isAdmin) {
+          tbody.innerHTML = '<tr><td colspan="6" class="empty">Only admins can view user accounts.</td></tr>';
+          return;
+        }
+        if (!users.length) {
+          tbody.innerHTML = '<tr><td colspan="6" class="empty">No users yet. Click "＋ Add user" to create the first login.</td></tr>';
+          return;
+        }
+        tbody.innerHTML = users.map(function (u) {
+          var isSelf = currentUser && u.id === currentUser.id;
+          var added = u.createdAt ? String(u.createdAt).slice(0, 10) : '—';
+          return '<tr data-user-id="' + escapeHtml(u.id) + '">'
+            + '<td><div class="person"><span class="mini-avatar">' + initials(u.name) + '</span><span>' + escapeHtml(u.name) + (isSelf ? ' <span style="color:var(--muted)">(you)</span>' : '') + '</span></div></td>'
+            + '<td>' + escapeHtml(u.email) + '</td>'
+            + '<td><span class="status ' + roleClass(u.role) + '">' + escapeHtml(roleLabel(u.role)) + '</span></td>'
+            + '<td><span class="status ' + statusPillClass(u.status) + '">' + escapeHtml(u.status) + '</span></td>'
+            + '<td><span style="font-size:11px;color:var(--muted)">' + escapeHtml(added) + '</span></td>'
+            + '<td style="text-align:right"><div style="display:inline-flex;gap:4px"><button class="action" data-edit-user="' + escapeHtml(u.id) + '">Edit</button>'
+            + (isSelf ? '' : '<button class="action" style="color:var(--red)" data-delete-user="' + escapeHtml(u.id) + '">Delete</button>')
+            + '</div></td>'
+            + '</tr>';
+        }).join('');
+      }
+
+      function openUserModal(userId) {
+        editingUserId = userId || null;
+        var modalTitle = document.getElementById('userModalTitle');
+        var nameInp = document.getElementById('userNameInput');
+        var emailInp = document.getElementById('userEmailInput');
+        var roleSel = document.getElementById('userRoleSelect');
+        var statusSel = document.getElementById('userStatusSelect');
+        var passInp = document.getElementById('userPasswordInput');
+        var passHint = document.getElementById('userPasswordHint');
+
+        if (editingUserId) {
+          var u = users.find(function (x) { return x.id === editingUserId; });
+          if (u) {
+            if (modalTitle) modalTitle.textContent = 'Edit user — ' + u.name;
+            if (nameInp) nameInp.value = u.name;
+            if (emailInp) emailInp.value = u.email;
+            if (roleSel) roleSel.value = u.role;
+            if (statusSel) statusSel.value = u.status;
+            if (passInp) { passInp.value = ''; passInp.required = false; }
+            if (passHint) passHint.textContent = '— leave blank to keep the current password';
+          }
+        } else {
+          if (modalTitle) modalTitle.textContent = 'Add user';
+          if (nameInp) nameInp.value = '';
+          if (emailInp) emailInp.value = '';
+          if (roleSel) roleSel.value = 'staff';
+          if (statusSel) statusSel.value = 'Active';
+          if (passInp) { passInp.value = ''; passInp.required = true; }
+          if (passHint) passHint.textContent = '— minimum 8 characters';
+        }
+        openModal('userModal');
+        setTimeout(function () { if (nameInp) nameInp.focus(); }, 120);
+      }
+
+      function openTaskModal(taskId) {
+        editingTaskId = taskId || null;
+        var p = personnel();
+
+        // --- Populate cashier datalist (sorted A-Z) ---
+        var cashierList = document.getElementById('cashierTaskList');
+        if (cashierList) {
+          var sortedCashiers = p.cashiers.slice().sort(function(a,b){ return a.localeCompare(b); });
+          cashierList.innerHTML = sortedCashiers.map(function(c){
+            return '<option value="'+escapeHtml(c)+'">';
+          }).join('');
+        }
+
+        // --- Populate vehicle datalist (sorted by plate) ---
+        var vehList = document.getElementById('vehicleTaskList');
+        if (vehList) {
+          var sortedVehicles = fleet.slice().sort(function(a,b){ return a.plate.localeCompare(b.plate); });
+          vehList.innerHTML = sortedVehicles.map(function(b){
+            var val = b.plate + ' (' + b.side + ')';
+            var label = b.plate + ' · ' + b.side + ' — ' + (b.type||'') + (b.route ? ' [' + b.route + ']' : '');
+            return '<option value="'+escapeHtml(val)+'" label="'+escapeHtml(label)+'">';
+          }).join('');
+        }
+
+        // --- Populate technician datalist (sorted A-Z, shows role) ---
+        var techList = document.getElementById('technicianTaskList');
+        if (techList) {
+          var sortedTechs = defaultTechnicians.slice().sort(function(a,b){ return a.name.localeCompare(b.name); });
+          techList.innerHTML = sortedTechs.map(function(t){
+            return '<option value="'+escapeHtml(t.name)+' ('+escapeHtml(t.role)+')" label="'+escapeHtml(t.name+' — '+t.role)+'">';
+          }).join('');
+        }
+
+        var modalTitle = document.getElementById('taskModalTitle');
+        var titleInp   = document.getElementById('taskTitleInput');
+        var cashierInp = document.getElementById('taskCashierInput');
+        var vehInp     = document.getElementById('taskVehicleInput');
+        var matInp     = document.getElementById('taskMaterialInput');
+        var techInp    = document.getElementById('taskTechnicianInput');
+        var prioSel    = document.getElementById('taskPrioritySelect');
+        var statSel    = document.getElementById('taskStatusSelect');
+        var dateInp    = document.getElementById('taskDueDateInput');
+        var notesInp   = document.getElementById('taskNotesInput');
+
+        if (editingTaskId) {
+          var task = tasks.find(function(t){ return t.id === editingTaskId; });
+          if (task) {
+            if (modalTitle) modalTitle.textContent = 'Edit Technical Task (' + task.taskCode + ')';
+            if (titleInp)   titleInp.value   = task.title;
+            if (cashierInp) cashierInp.value  = task.cashier;
+            if (vehInp)     vehInp.value     = task.vehicle || '';
+            if (matInp)     matInp.value     = task.material;
+            if (techInp)    techInp.value    = task.technician;
+            if (prioSel)    prioSel.value    = task.priority;
+            if (statSel)    statSel.value    = task.status;
+            if (dateInp)    dateInp.value    = task.dueDate || new Date().toISOString().slice(0,10);
+            if (notesInp)   notesInp.value   = task.notes || '';
+          }
+        } else {
+          if (modalTitle) modalTitle.textContent = 'Create Technical Task';
+          if (titleInp)   titleInp.value   = '';
+          if (cashierInp) cashierInp.value  = '';
+          if (vehInp)     vehInp.value     = '';
+          if (matInp)     matInp.value     = '';
+          if (techInp)    techInp.value    = '';
+          if (prioSel)    prioSel.value    = 'Normal';
+          if (statSel)    statSel.value    = 'Pending';
+          if (dateInp)    dateInp.value    = new Date().toISOString().slice(0,10);
+          if (notesInp)   notesInp.value   = '';
+        }
+        openModal('taskModal');
+        // Auto-focus first editable field
+        setTimeout(function(){ if (titleInp) titleInp.focus(); }, 120);
+      }
+
+      function exportTasks() {
+        var grid = [['Ticket', 'Task Title', 'Cashier', 'Vehicle', 'Material to Change', 'Assigned Technician', 'Priority', 'Status', 'Due Date', 'Notes']].concat(
+          tasks.map(function(t) {
+            return [t.taskCode, t.title, t.cashier, t.vehicle, t.material, t.technician, t.priority, t.status, t.dueDate, t.notes];
+          })
+        );
+        downloadCsv('menged-technical-tasks.csv', grid);
+        showToast('Technical tasks exported.');
+      }
+
+      bindEvent('openTaskModal', 'click', function() { openTaskModal(null); });
+      bindEvent('exportTasks', 'click', exportTasks);
+      bindEvent('taskSearch', 'input', renderTasks);
+
+      document.querySelectorAll('[data-task-filter]').forEach(function (tab) {
+        tab.addEventListener('click', function () {
+          document.querySelectorAll('[data-task-filter]').forEach(function (item) { item.classList.remove('active'); });
+          tab.classList.add('active');
+          activeTaskFilter = tab.dataset.taskFilter;
+          renderTasks();
+        });
+      });
+
+      bindEvent('taskRows', 'click', async function (event) {
+        var editId = event.target.dataset.editTask;
+        if (editId) {
+          openTaskModal(editId);
+          return;
+        }
+        var deleteId = event.target.dataset.deleteTask;
+        if (deleteId) {
+          if (confirm('Delete this technical task?')) {
+            try {
+              await apiDelete('/tasks/' + deleteId);
+              tasks = tasks.filter(function(t){ return t.id !== deleteId; });
+              renderTasks();
+              showToast('Task deleted.');
+            } catch(err) {
+              showToast(err.message || 'Could not delete task.');
+            }
+          }
+          return;
+        }
+      });
+
+      bindEvent('materialRows', 'click', async function (event) {
+        if (!canManageMaterials) return;
+        var editId = event.target.dataset.editMaterial;
+        if (editId) {
+          openMaterialIssue(editId);
+          return;
+        }
+        var deleteId = event.target.dataset.deleteMaterial;
+        if (deleteId) {
+          if (confirm('Delete this material issue record?')) {
+            try {
+              await apiDelete('/materials/' + deleteId);
+              materialIssues = materialIssues.filter(function(m){ return m.id !== deleteId; });
+              renderMaterials();
+              showToast('Material issue deleted.');
+            } catch(err) {
+              showToast(err.message || 'Could not delete material issue.');
+            }
+          }
+          return;
+        }
+      });
+
+      bindEvent('taskRows', 'change', async function (event) {
+        var statusSel = event.target.closest && event.target.closest('.task-status-select');
+        if (statusSel) {
+          var taskId = statusSel.dataset.taskStatusId;
+          var newStatus = statusSel.value;
+          try {
+            var updated = await apiPut('/tasks/' + taskId, { status: newStatus });
+            var task = tasks.find(function(t){ return t.id === taskId; });
+            if (task) Object.assign(task, updated);
+            renderTasks();
+            showToast('Task status updated to ' + newStatus + '.');
+          } catch(err) {
+            showToast(err.message || 'Could not update task status.');
+            renderTasks();
+          }
+        }
+      });
+
+      bindEvent('taskForm', 'submit', async function (event) {
+        event.preventDefault();
+        var submitBtn = document.getElementById('saveTaskBtn');
+        if (submitBtn) submitBtn.disabled = true;
+
+        var cashierVal   = (document.getElementById('taskCashierInput')    || {}).value || '';
+        var vehicleVal   = (document.getElementById('taskVehicleInput')    || {}).value || '';
+        var materialVal  = (document.getElementById('taskMaterialInput')   || {}).value || '';
+        var technicianVal = (document.getElementById('taskTechnicianInput')|| {}).value || '';
+
+        if (!cashierVal.trim()) { showToast('Please enter or select a cashier name.'); if(submitBtn) submitBtn.disabled=false; return; }
+        if (!materialVal.trim()) { showToast('Please enter the material / hardware to change.'); if(submitBtn) submitBtn.disabled=false; return; }
+        if (!technicianVal.trim()) { showToast('Please enter or select a technician.'); if(submitBtn) submitBtn.disabled=false; return; }
+
+        var payload = {
+          title:      (document.getElementById('taskTitleInput')  || {}).value ? document.getElementById('taskTitleInput').value.trim() : ('Change ' + materialVal.trim() + ' for ' + cashierVal.trim()),
+          cashier:    cashierVal.trim(),
+          vehicle:    vehicleVal.trim(),
+          material:   materialVal.trim(),
+          technician: technicianVal.trim(),
+          priority:   (document.getElementById('taskPrioritySelect') || {}).value || 'Normal',
+          status:     (document.getElementById('taskStatusSelect')   || {}).value || 'Pending',
+          dueDate:    (document.getElementById('taskDueDateInput')   || {}).value || new Date().toISOString().slice(0,10),
+          notes:      (document.getElementById('taskNotesInput')     || {}).value ? document.getElementById('taskNotesInput').value.trim() : ''
+        };
+
+        try {
+          if (editingTaskId) {
+            var updated = await apiPut('/tasks/' + editingTaskId, payload);
+            var idx = tasks.findIndex(function(t){ return t.id === editingTaskId; });
+            if (idx !== -1) tasks[idx] = updated;
+            showToast('Technical task updated successfully.');
+          } else {
+            var created = await apiPost('/tasks', payload);
+            tasks.unshift(created);
+            showToast('Task ' + created.taskCode + ' created — ' + created.cashier + ' · ' + created.material + '.');
+          }
+          renderTasks();
+          closeModal('taskModal');
+          event.target.reset();
+        } catch(err) {
+          showToast(err.message || "Couldn't save task.");
+        } finally {
+          if (submitBtn) submitBtn.disabled = false;
+        }
+      });
+
+      bindEvent('openUserModal', 'click', function () {
+        if (!isAdmin) { showToast('Only admins can manage users.'); return; }
+        openUserModal(null);
+      });
+
+      bindEvent('userRows', 'click', async function (event) {
+        var editId = event.target.dataset.editUser;
+        if (editId) { openUserModal(editId); return; }
+        var deleteId = event.target.dataset.deleteUser;
+        if (deleteId) {
+          var target = users.find(function (u) { return u.id === deleteId; });
+          if (confirm('Delete user "' + (target ? target.name : 'this account') + '"? This cannot be undone.')) {
+            try {
+              await apiDelete('/auth/users/' + deleteId);
+              users = users.filter(function (u) { return u.id !== deleteId; });
+              renderUsers();
+              showToast('User deleted.');
+            } catch (err) {
+              showToast(err.message || 'Could not delete user.');
+            }
+          }
+          return;
+        }
+      });
+
+      bindEvent('userForm', 'submit', async function (event) {
+        event.preventDefault();
+        var submitBtn = document.getElementById('saveUserBtn');
+        if (submitBtn) submitBtn.disabled = true;
+
+        var nameVal = (document.getElementById('userNameInput') || {}).value || '';
+        var emailVal = (document.getElementById('userEmailInput') || {}).value || '';
+        var roleVal = (document.getElementById('userRoleSelect') || {}).value || 'staff';
+        var statusVal = (document.getElementById('userStatusSelect') || {}).value || 'Active';
+        var passwordVal = (document.getElementById('userPasswordInput') || {}).value || '';
+
+        if (!nameVal.trim()) { showToast('Please enter a name.'); if (submitBtn) submitBtn.disabled = false; return; }
+        if (!emailVal.trim()) { showToast('Please enter an email.'); if (submitBtn) submitBtn.disabled = false; return; }
+        if (!editingUserId && passwordVal.length < 8) { showToast('Password must be at least 8 characters.'); if (submitBtn) submitBtn.disabled = false; return; }
+        if (passwordVal && passwordVal.length < 8) { showToast('Password must be at least 8 characters.'); if (submitBtn) submitBtn.disabled = false; return; }
+
+        try {
+          if (editingUserId) {
+            var payload = { name: nameVal.trim(), role: roleVal, status: statusVal };
+            if (passwordVal) payload.password = passwordVal;
+            var updated = await apiPut('/auth/users/' + editingUserId, payload);
+            var idx = users.findIndex(function (u) { return u.id === editingUserId; });
+            if (idx !== -1) users[idx] = updated;
+            if (currentUser && updated.id === currentUser.id) {
+              currentUser.name = updated.name; currentUser.role = updated.role;
+              var storage = localStorage.getItem('mengedUser') ? localStorage : sessionStorage;
+              storage.setItem('mengedUser', JSON.stringify(currentUser));
+              var nameEl = document.getElementById('userNameLabel'); if (nameEl) nameEl.textContent = currentUser.name;
+              var roleEl = document.getElementById('userRoleLabel'); if (roleEl) roleEl.textContent = currentUser.role === 'admin' ? 'Fleet administrator' : roleLabel(currentUser.role);
+            }
+            showToast('User updated.');
+          } else {
+            var created = await apiPost('/auth/users', {
+              name: nameVal.trim(),
+              email: emailVal.trim(),
+              password: passwordVal,
+              role: roleVal
+            });
+            users.push(created);
+            showToast('User "' + created.name + '" created.');
+          }
+          renderUsers();
+          closeModal('userModal');
+          event.target.reset();
+        } catch (err) {
+          showToast(err.message || "Couldn't save user.");
+        } finally {
+          if (submitBtn) submitBtn.disabled = false;
+        }
+      });
+
+      document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape') {
+          document.querySelectorAll('.modal-backdrop.open').forEach(function (modal) {
+            closeModal(modal.id);
+          });
+        }
+      });
+
+      initApp();
+      showView(window.location.hash.replace('#', '') || defaultPanel(), false);
+    }());
+  </script>
+
+
+</body></html>

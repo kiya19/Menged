@@ -1,0 +1,29 @@
+{
+  "name": "menged-backend",
+  "version": "1.0.0",
+  "description": "Express API for the Menged Fleet Operations dashboard, backed by a local Supabase (Postgres) database.",
+  "main": "src/server.js",
+  "type": "commonjs",
+  "scripts": {
+    "dev": "nodemon src/server.js",
+    "start": "node src/server.js",
+    "db:migrate": "psql \"$DATABASE_URL\" -f supabase/migrations/0001_init_schema.sql && psql \"$DATABASE_URL\" -f supabase/migrations/0002_users_and_roles.sql && psql \"$DATABASE_URL\" -f supabase/migrations/0003_technical_tasks.sql && psql \"$DATABASE_URL\" -f supabase/migrations/0004_material_serial_no.sql && psql \"$DATABASE_URL\" -f supabase/migrations/0005_material_plate_no.sql && psql \"$DATABASE_URL\" -f supabase/migrations/0006_reception_reports_roles.sql",
+    "db:seed": "psql \"$DATABASE_URL\" -f supabase/seed.sql"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "jsonwebtoken": "^9.0.3",
+    "morgan": "^1.10.0",
+    "pg": "^8.12.0",
+    "pg-mem": "^3.0.14"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.4"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
