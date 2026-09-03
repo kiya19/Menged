@@ -811,7 +811,17 @@
           if (nameEl) nameEl.textContent = currentUser.name || currentUser.email;
           if (roleEl) roleEl.textContent = currentUser.role === 'admin' ? 'Fleet administrator' : roleLabel(currentUser.role);
           if (avEl) avEl.textContent = initials(currentUser.name || currentUser.email || '');
+          var greetingNameEl = document.getElementById('greetingName');
+          var greetingTextEl = document.getElementById('greetingText');
+          if (greetingNameEl) {
+             var fullName = currentUser.name || currentUser.email || '';
+             greetingNameEl.textContent = fullName.split(' ')[0];
         }
+          if (greetingTextEl) {
+           var hour = new Date().getHours();
+        greetingTextEl.textContent = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+       }
+       }
         var usersNavEl = document.getElementById('usersNavLink');
         if (usersNavEl) usersNavEl.style.display = isAdmin ? '' : 'none';
         // 'reports' accounts only get Reports, Tasks, and Finance Audit —
